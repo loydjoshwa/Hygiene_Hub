@@ -1,0 +1,834 @@
+{
+  "Admin": [
+    {
+      "id": "admin01",
+      "email": "admin123@gmail.com",
+      "password": "12345678"
+    }
+  ],
+  "users": [
+    {
+      "id": "acb5",
+      "username": "has",
+      "email": "hashin@gmail.com",
+      "password": "123456",
+      "status": "active"
+    },
+    {
+      "id": "b5d8",
+      "username": "hanan",
+      "email": "hanan@gmail.com",
+      "password": "123456",
+      "status": "active"
+    },
+    {
+      "id": "4687",
+      "username": "hashin",
+      "email": "hashin12@gmail.com",
+      "password": "123456",
+      "status": "blocked"
+    },
+    {
+      "id": "e6b2",
+      "username": "hanan",
+      "email": "hanan123@gmail.com",
+      "password": "123456",
+      "status": "active"
+    },
+    {
+      "id": "bb17",
+      "username": "hanan",
+      "email": "hanan1234@gmail.com",
+      "password": "123456",
+      "status": "active"
+    },
+    {
+      "id": "8bc4",
+      "username": "newmember",
+      "email": "new@gmail.com",
+      "password": "123456",
+      "status": "active"
+    },
+    {
+      "id": "99e6",
+      "username": "hanan",
+      "email": "hanan12345@gmail.com",
+      "password": "123456"
+    },
+    {
+      "id": "dd71",
+      "username": "hanan",
+      "email": "hanan5@gmail.com",
+      "password": "123456789"
+    },
+    {
+      "id": "fe7e",
+      "username": "loyd",
+      "email": "loyd123@gmail.com",
+      "password": "123456",
+      "status": "blocked"
+    },
+    {
+      "id": "c2e6",
+      "username": "hanan",
+      "email": "hanan12@gmail.com",
+      "password": "123456"
+    },
+    {
+      "id": "6148",
+      "username": "loyd33",
+      "email": "loyd33@gmail.com",
+      "password": "123456"
+    },
+    {
+      "username": "loyd",
+      "email": "Loydjoshwad@gmail.com",
+      "password": "123456",
+      "id": "v4oz5Cm9OX4"
+    }
+  ],
+  "products": [
+    {
+      "name": "Khadi Lemon Ayurvedic Handwash",
+      "price": 479,
+      "description": "Refreshing lemon-based ayurvedic handwash enriched with antibacterial herbal extracts for soft, germ-free hands.",
+      "rating": 4.6,
+      "image": "/prod1.webp",
+      "id": "p1"
+    },
+    {
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "rating": 4.5,
+      "image": "/prod2.webp",
+      "id": "p2"
+    },
+    {
+      "id": "p3",
+      "name": "Vaadi Lavender & Mint Handwash",
+      "price": 310,
+      "rating": 4.7,
+      "description": "A calming lavender and mint-infused handwash made with natural botanicals and a soothing aroma.",
+      "image": "/prod3.webp"
+    },
+    {
+      "id": "p4",
+      "name": "Greenviv Tea Tree & Peppermint Handwash",
+      "price": 389,
+      "rating": 4.4,
+      "description": "Tea tree and peppermint handwash with cooling and antibacterial properties for fresh, clean hands.",
+      "image": "/prod4.webp"
+    },
+    {
+      "id": "p5",
+      "name": "Vaadi Rose & Jasmine Hydrating Handwash",
+      "price": 299,
+      "rating": 4.6,
+      "description": "Luxurious rose & jasmine handwash enriched with hydrating botanicals for silky soft hands.",
+      "image": "/prod5.webp"
+    },
+    {
+      "id": "p6",
+      "name": "Palmolive Lime & Mint Foaming Handwash",
+      "price": 485,
+      "rating": 4.5,
+      "description": "Zesty lime & mint foaming handwash with deep hydration and 99.9% germ protection.",
+      "image": "/prod6.webp"
+    },
+    {
+      "id": "p7",
+      "name": "Lassa Antibacterial Germ Protection Handwash",
+      "price": 287,
+      "rating": 4.3,
+      "description": "Anti-bacterial handwash with citrus fragrance, gentle cleansing, and everyday germ protection.",
+      "image": "/prod7.webp"
+    },
+    {
+      "id": "p8",
+      "name": "Grandmaas Neem & Tulsi Handwash",
+      "price": 355,
+      "rating": 4.6,
+      "description": "Natural herbal handwash handcrafted with neem & tulsi for deep cleansing and soothing freshness.",
+      "image": "/prod8.webp"
+    },
+    {
+      "id": "p9",
+      "name": "Safeguard Ocean Breeze Handwash",
+      "price": 390,
+      "rating": 4.5,
+      "description": "Ocean-fresh hydrating handwash formulated with plant-based cleansers and ocean breeze fragrance.",
+      "image": "/prod9.webp"
+    },
+    {
+      "id": "p10",
+      "name": "Aqua Bliss & Foaming Hand Soap",
+      "price": 320,
+      "rating": 4.7,
+      "description": "Premium gentle foaming soap with Aqua Bliss fragrance for refreshing, silky soft handwashing.",
+      "image": "/prod10.webp"
+    },
+    {
+      "id": "p11",
+      "name": "Outshine Lotus Gentle Handwash",
+      "price": 360,
+      "rating": 4.4,
+      "description": "Lotus and tulsi infused gentle handwash with moisturizing properties and mild floral fragrance.",
+      "image": "/prod11.webp"
+    },
+    {
+      "id": "p12",
+      "name": "Black Care Green Apple Handwash",
+      "price": 430,
+      "rating": 4.6,
+      "description": "Refreshing premium handwash with green apple essence offering rich lather and fruity aroma.",
+      "image": "/prod12.webp"
+    },
+    {
+      "id": "p13",
+      "name": "Skinstone Cocoa Vanilla Handwash",
+      "price": 360,
+      "rating": 4.8,
+      "description": "Aromatic cocoa vanilla premium handwash with botanical extracts for deep cleansing and nourishment.",
+      "image": "/prod13.webp"
+    },
+    {
+      "name": "Elenor Pomegranate & Berry Handwash",
+      "price": 412,
+      "description": "Berry-rich handwash with pomegranate and mixed berries for antioxidant protection and fruity freshness.",
+      "rating": 4.7,
+      "image": "/prod14.webp",
+      "id": "p14"
+    }
+  ],
+  "cart": [
+    {
+      "id": "daa8",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "quantity": 2,
+      "userId": "99e6"
+    },
+    {
+      "id": "497e",
+      "productId": "f919",
+      "name": "Elenor Pomegranate & Berry Handwash",
+      "price": 412,
+      "image": "/prod14.webp",
+      "description": "Berry-rich handwash with pomegranate and mixed berries for antioxidant protection and fruity freshness.",
+      "quantity": 2,
+      "userId": "bb17"
+    },
+    {
+      "id": "7b9d",
+      "productId": "a6b1",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "quantity": 1,
+      "userId": "bb17"
+    },
+    {
+      "id": "c7bb",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "quantity": 3,
+      "userId": "dd71"
+    },
+    {
+      "id": "e939",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "quantity": 3,
+      "userId": "fe7e"
+    },
+    {
+      "id": "5f3c",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "quantity": 1,
+      "userId": "b5d8"
+    },
+    {
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "quantity": 1,
+      "userId": "v4oz5Cm9OX4",
+      "id": "F12hYz3PvE8"
+    }
+  ],
+  "wishlist": [
+    {
+      "id": "2673",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "userId": "99e6"
+    },
+    {
+      "id": "a6b1",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "userId": "bb17"
+    },
+    {
+      "id": "0b9b",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "userId": "dd71"
+    },
+    {
+      "id": "b270",
+      "productId": "p3",
+      "name": "Vaadi Lavender & Mint Handwash",
+      "price": 310,
+      "image": "/prod3.webp",
+      "description": "A calming lavender and mint-infused handwash made with natural botanicals and a soothing aroma.",
+      "userId": "dd71"
+    },
+    {
+      "id": "440c",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "userId": "fe7e"
+    },
+    {
+      "id": "cf16",
+      "productId": "p4",
+      "name": "Greenviv Tea Tree & Peppermint Handwash",
+      "price": 389,
+      "image": "/prod4.webp",
+      "description": "Tea tree and peppermint handwash with cooling and antibacterial properties for fresh, clean hands.",
+      "userId": "dd71"
+    },
+    {
+      "id": "3cd5",
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "userId": "b5d8"
+    },
+    {
+      "productId": "p2",
+      "name": "Khadi Aloe Vera & Mint Handwash",
+      "price": 369,
+      "image": "/prod2.webp",
+      "description": "Gentle moisturizing Aloe Vera handwash offering deep protection from germs and dryness.",
+      "userId": "v4oz5Cm9OX4",
+      "id": "GWu0tB1JHIg"
+    },
+    {
+      "productId": "p7",
+      "name": "Lassa Antibacterial Germ Protection Handwash",
+      "price": 287,
+      "image": "/prod7.webp",
+      "description": "Anti-bacterial handwash with citrus fragrance, gentle cleansing, and everyday germ protection.",
+      "userId": "v4oz5Cm9OX4",
+      "id": "a3dXfZc0Z6U"
+    }
+  ],
+  "orders": [
+    {
+      "id": "141e",
+      "orderId": "ORD891058",
+      "userId": "b5d8",
+      "userName": "hello loy",
+      "userEmail": "hanan@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "123",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "cardLastFour": "4524",
+        "cardName": "loyd"
+      },
+      "items": [
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 379,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        },
+        {
+          "productId": "p3",
+          "name": "Vaadi Lavender & Mint Handwash",
+          "price": 310,
+          "quantity": 1,
+          "image": "/prod3.webp"
+        },
+        {
+          "productId": "p4",
+          "name": "Greenviv Tea Tree & Peppermint Handwash",
+          "price": 389,
+          "quantity": 1,
+          "image": "/prod4.webp"
+        }
+      ],
+      "subtotal": 1078,
+      "shipping": 40,
+      "total": 1118,
+      "orderDate": "2025-12-02T14:14:51.058Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "a20f",
+      "orderId": "ORD515073",
+      "userId": "b5d8",
+      "userName": "hello loy",
+      "userEmail": "hanan@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "1232",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "cardLastFour": "4524",
+        "cardName": "loyd"
+      },
+      "items": [
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 379,
+          "quantity": 2,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 758,
+      "shipping": 40,
+      "total": 798,
+      "orderDate": "2025-12-03T04:18:35.073Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "41e0",
+      "orderId": "ORD273854",
+      "userId": "acb5",
+      "userName": "hello loy",
+      "userEmail": "hashin@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "123",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "cardLastFour": "4524",
+        "cardName": "loyd"
+      },
+      "items": [
+        {
+          "productId": "p1",
+          "name": "Khadi Lemon Ayurvedic Handwash",
+          "price": 469,
+          "quantity": 2,
+          "image": "/prod1.webp"
+        },
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 379,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 1317,
+      "shipping": 40,
+      "total": 1357,
+      "orderDate": "2025-12-03T04:31:13.854Z",
+      "status": "processing"
+    },
+    {
+      "id": "1c8a",
+      "orderId": "ORD137635",
+      "userId": "4687",
+      "userName": "hello loy",
+      "userEmail": "hashin12@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "123",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "cardLastFour": "4524",
+        "cardName": "loyd"
+      },
+      "items": [
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 379,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 379,
+      "shipping": 40,
+      "total": 419,
+      "orderDate": "2025-12-03T09:12:17.635Z",
+      "status": "processing"
+    },
+    {
+      "id": "d112",
+      "orderId": "ORD426131",
+      "userId": "bb17",
+      "userName": "hello loy",
+      "userEmail": "hanan1234@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "delhi",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "cardLastFour": "4524",
+        "cardName": "loyd"
+      },
+      "items": [
+        {
+          "productId": "7f75",
+          "name": "Khadi Lemon Ayurvedic Handwash",
+          "price": 469,
+          "quantity": 1,
+          "image": "/prod1.webp"
+        }
+      ],
+      "subtotal": 469,
+      "shipping": 40,
+      "total": 509,
+      "orderDate": "2025-12-03T14:50:26.132Z",
+      "status": "processing"
+    },
+    {
+      "id": "39a2",
+      "orderId": "ORD618454",
+      "userId": "bb17",
+      "userName": "hello loy",
+      "userEmail": "hanan1234@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "tfy",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "hevy@upi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "p1",
+          "name": "Khadi Lemon Ayurvedic Handwash",
+          "price": 469,
+          "quantity": 1,
+          "image": "/prod1.webp"
+        },
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 379,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        },
+        {
+          "productId": "p4",
+          "name": "Greenviv Tea Tree & Peppermint Handwash",
+          "price": 389,
+          "quantity": 1,
+          "image": "/prod4.webp"
+        }
+      ],
+      "subtotal": 1237,
+      "shipping": 40,
+      "total": 1277,
+      "orderDate": "2025-12-09T05:20:18.454Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "66f0",
+      "orderId": "ORD501012",
+      "userId": "bb17",
+      "userName": "hanan ",
+      "userEmail": "hanan1234@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "df",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "gg@upi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "5211",
+          "name": "Khadi Lemon Ayurvedic Handwash",
+          "price": 479,
+          "quantity": 1,
+          "image": "/prod1.webp"
+        }
+      ],
+      "subtotal": 479,
+      "shipping": 40,
+      "total": 519,
+      "orderDate": "2025-12-10T10:45:01.027Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "4525",
+      "orderId": "ORD305300",
+      "userId": "dd71",
+      "userName": "hanan ",
+      "userEmail": "hanan5@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "sd",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "hevy@upi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 369,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 369,
+      "shipping": 40,
+      "total": 409,
+      "orderDate": "2025-12-10T13:28:25.300Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "69c4",
+      "orderId": "ORD562575",
+      "userId": "dd71",
+      "userName": "Loyd Joshwa Dsouza",
+      "userEmail": "hanan5@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "hf",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "hevy@upi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "p1",
+          "name": "Khadi Lemon Ayurvedic Handwash",
+          "price": 479,
+          "quantity": 1,
+          "image": "/prod1.webp"
+        }
+      ],
+      "subtotal": 479,
+      "shipping": 40,
+      "total": 519,
+      "orderDate": "2025-12-11T06:46:02.576Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "156d",
+      "orderId": "ORD128168",
+      "userId": "fe7e",
+      "userName": "Loyd Joshwa Dsouza",
+      "userEmail": "loyd123@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "d",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "hevy@upi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 369,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 369,
+      "shipping": 40,
+      "total": 409,
+      "orderDate": "2025-12-12T10:25:28.168Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "7b41",
+      "orderId": "ORD351578",
+      "userId": "e6b2",
+      "userName": "Loyd Joshwa Dsouza",
+      "userEmail": "hanan123@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "5r",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "hevy@upi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "p7",
+          "name": "Lassa Antibacterial Germ Protection Handwash",
+          "price": 287,
+          "quantity": 1,
+          "image": "/prod7.webp"
+        },
+        {
+          "productId": "aa58",
+          "name": "Khadi Lemon Ayurvedic Handwash",
+          "price": 479,
+          "quantity": 1,
+          "image": "/prod1.webp"
+        },
+        {
+          "productId": "6800",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 369,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 1135,
+      "shipping": 40,
+      "total": 1175,
+      "orderDate": "2025-12-30T07:55:51.602Z",
+      "status": "confirmed"
+    },
+    {
+      "id": "3a7c",
+      "orderId": "ORD097851",
+      "userId": "e6b2",
+      "userName": "Loyd Joshwa Dsouza",
+      "userEmail": "hanan123@gmail.com",
+      "userPhone": "8848100705",
+      "shippingAddress": {
+        "address": "ffg",
+        "state": "Kerala",
+        "pincode": "123456"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "hevy@upi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 369,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 369,
+      "shipping": 40,
+      "total": 409,
+      "orderDate": "2025-12-30T08:08:17.855Z",
+      "status": "confirmed"
+    },
+    {
+      "orderId": "ORD340555",
+      "userId": "acb5",
+      "userName": "sdfg",
+      "userEmail": "hashin@gmail.com",
+      "userPhone": "1234567897",
+      "shippingAddress": {
+        "address": "cb",
+        "state": "dfghj",
+        "pincode": "234565"
+      },
+      "paymentMethod": "upi",
+      "paymentDetails": {
+        "upiId": "ghjk@sbi",
+        "status": "pending"
+      },
+      "items": [
+        {
+          "productId": "7cs9JtNEjY8",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 369,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        },
+        {
+          "productId": "p2",
+          "name": "Khadi Aloe Vera & Mint Handwash",
+          "price": 369,
+          "quantity": 1,
+          "image": "/prod2.webp"
+        }
+      ],
+      "subtotal": 738,
+      "shipping": 40,
+      "total": 778,
+      "orderDate": "2026-04-27T07:19:00.563Z",
+      "status": "confirmed",
+      "id": "bUfcrtiv2ps"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
