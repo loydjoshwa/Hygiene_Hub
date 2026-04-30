@@ -7,7 +7,7 @@ import (
 
 )
 
-var ctx = context.Background()
+var Ctx = context.Background()
 
 type Redis struct{
 	Client *redis.Client

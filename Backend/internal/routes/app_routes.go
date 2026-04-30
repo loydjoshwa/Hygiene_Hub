@@ -1,48 +1,50 @@
-package middleware
+package routes
 
 import (
-	"golang/utils/constant"
-	"golang/utils/jwt"
-	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+
+	"hygienehub/middleware"
+	"hygienehub/src/controllers"
+	"hygienehub/src/repository"
+	"hygienehub/utils/jwt"
 )
 
-func AuthMiddleware(jwtManager *jwt.Manager) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+func SetUpRoutes(
+	app *fiber.App,
+	authController *controllers.AuthController,
+	jwtManager *jwt.Manager,
+	repo *repository.Repository,
+) {
 
-		authHeader := c.Get("Authorization")
-		if authHeader == "" {
-			return c.Status(constant.UNAUTHORIZED).
-				JSON(fiber.Map{"error": "Authorization header missing"})
-		}
+	// ---------------- CORS ----------------
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: false, // IMPORTANT: must be false when using "*"
+		MaxAge:           int((12 * time.Hour).Seconds()),
+	}))
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			return c.Status(constant.UNAUTHORIZED).
-				JSON(fiber.Map{"error": "Invalid authorization format"})
-		}
+	// ---------------- TEST ----------------
+	app.Get("/api/test", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"message": "backend connected",
+		})
+	})
 
-		token := parts[1]
+	// ---------------- AUTH ----------------
+	auth := app.Group("/auth")
+	auth.Post("/signup", authController.Signup)
+	auth.Post("/check", authController.VerifyOTP)
+	auth.Post("/resend-otp", authController.ResendOTP)
+	auth.Post("/login", authController.Login)
+	auth.Post("/refresh", authController.Refresh)
+	auth.Post("/logout", authController.Logout)
 
-		claims, err := jwtManager.ValidateAccessToken(token)
-		if err != nil {
-			return c.Status(constant.UNAUTHORIZED).
-				JSON(fiber.Map{"error": "Invalid or expired token"})
-		}
-
-		userID, ok := claims["user_id"].(string)
-		if !ok || userID == "" {
-			return c.Status(constant.UNAUTHORIZED).
-				JSON(fiber.Map{"error": "Invalid token claims"})
-		}
-
-		role, _ := claims["role"].(string)
-
-		// Set values in context (Fiber style)
-		c.Locals("user_id", userID)
-		c.Locals("role", role)
-
-		return c.Next()
-	}
+	// ---------------- USER (Protected) ----------------
+	user := app.Group("/user", middleware.AuthMiddleware(jwtManager))
+	user.Get("/dashboard", authController.Dashboard)
 }

@@ -171,37 +171,25 @@ func (a *AuthController) Logout(c *fiber.Ctx) error {
 		JSON(fiber.Map{"message": "Logged out successfully"})
 }
 
-
-//dashboard
-
 func (a *AuthController) Dashboard(c *fiber.Ctx) error {
 
-	userID, _ := c.Locals("user_id").(string)
+	// get values set by middleware
+	userID, ok := c.Locals("user_id").(string)
+	if !ok || userID == "" {
+		return c.Status(constant.UNAUTHORIZED).
+			JSON(fiber.Map{"error": "unauthorized"})
+	}
+
 	role, _ := c.Locals("role").(string)
 
+	// fetch user from service
 	user, err := a.authService.GetUserByID(userID)
 	if err != nil {
 		return c.Status(constant.INTERNALSERVERERROR).
 			JSON(fiber.Map{"error": "failed to get user info"})
 	}
 
-	if role == "admin" {
-		var totalProducts int64
-		var totalUsers int64
-
-		a.authService.GetDashboardStats(&totalProducts, &totalUsers)
-
-		return c.Status(constant.SUCCESS).JSON(fiber.Map{
-			"message":  "Welcome to Admin Dashboard",
-			"admin_id": userID,
-			"role":     role,
-			"stats": fiber.Map{
-				"total_products": totalProducts,
-				"total_users":    totalUsers,
-			},
-		})
-	}
-
+	// response
 	return c.Status(constant.SUCCESS).JSON(fiber.Map{
 		"message": "Welcome to User Dashboard",
 		"user_id": userID,
@@ -209,3 +197,4 @@ func (a *AuthController) Dashboard(c *fiber.Ctx) error {
 		"role":    role,
 	})
 }
+

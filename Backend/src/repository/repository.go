@@ -10,7 +10,7 @@ func SetUpRepo(db *gorm.DB) *Repository{
 	return &Repository{DB:db}
 }
 
-func (r*Repository) insert(req interface{}) error {
+func (r*Repository) Insert(req interface{}) error {
 	if err := r.DB.Debug().Create(req).Error;err !=nil{
 		return err
 	}

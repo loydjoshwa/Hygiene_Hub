@@ -74,7 +74,7 @@ func LoadConfig() *Config {
 	cfg.SMTP.Port = getEnvAsInt("SMTP_PORT", 587)
 	cfg.SMTP.Username = getEnv("SMTP_USERNAME", "")
 	cfg.SMTP.Password = getEnv("SMTP_PASSWORD", "")
-	cfg.SMTP.From = getEnv("SMTP_FROM", "loydjoshwad <shhabin.07@gmail.com>")
+	cfg.SMTP.From = getEnv("SMTP_FROM", "hygienehub <loydjoshwad@gmail.com>")
 
 	//otp
 	cfg.OTP.Length = getEnvAsInt("OTP_LENGTH", 5)

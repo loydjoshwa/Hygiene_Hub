@@ -12,7 +12,7 @@ hash,err:=bcrypt.GenerateFromPassword([]byte(password),bcrypt.DefaultCost)
 return string(hash),err
 }
 
-func comparePassword(hash,password string) bool {
+func ComparePassword(hash,password string) bool {
 err:=bcrypt.CompareHashAndPassword([]byte(hash),[]byte(password))
 return err==nil
 }
