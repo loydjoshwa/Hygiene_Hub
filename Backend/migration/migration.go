@@ -11,11 +11,6 @@ func Migrate(db *gorm.DB) {
   err:= db.AutoMigrate(
 	&models.User{},
   &models.RefreshToken{},
-  &models.Product{},
-  &models.Cart{},
-  &models.CartItem{},
-  &models.Wishlist{},
-  &models.WishlistItem{},
   )
 
   if err!=nil{
