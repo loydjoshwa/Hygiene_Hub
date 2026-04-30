@@ -23,8 +23,8 @@ type Config struct {
 	}
 
 	JWT struct {
-		AccessSecrete    string
-		RefreshSecrete   string
+		AccessSecret  string
+		RefreshSecret   string
 		AccessTTLMinutes int
 		RefreshTTLHours  int
 		MaxSessionHours  int
