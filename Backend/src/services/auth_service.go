@@ -18,10 +18,11 @@ import (
 )
 
 type SignupData struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	OTP      string `json:"otp"`
+	Name         string    `json:"name"`
+	Email        string    `json:"email"`
+	Password     string    `json:"password"`
+	OTP          string    `json:"otp"`
+	OTPExpiresAt time.Time `json:"otp_expires_at"`
 }
 
 type AuthService struct {
@@ -83,10 +84,11 @@ func (s *AuthService) Signup(name, emailStr, passwordStr string) error {
 
 	// serialize signup data
 	data := SignupData{
-		Name:     name,
-		Email:    emailStr,
-		Password: hashedPassword,
-		OTP:      hashedOTP,
+		Name:         name,
+		Email:        emailStr,
+		Password:     hashedPassword,
+		OTP:          hashedOTP,
+		OTPExpiresAt: time.Now().Add(time.Duration(s.cfg.OTP.ExpiryMinutes) * time.Minute),
 	}
 
 	dataBytes, err := json.Marshal(data)
@@ -94,13 +96,13 @@ func (s *AuthService) Signup(name, emailStr, passwordStr string) error {
 		return errors.New("failed to process signup data")
 	}
 
-	// store SignupData in Redis
+	// store SignupData in Redis with 24 hours TTL
 	key := "otp:verify:" + emailStr
 	if err := s.redis.Client.Set(
 		cache.Ctx,
 		key,
 		dataBytes,
-		time.Duration(s.cfg.OTP.ExpiryMinutes)*time.Minute,
+		24*time.Hour,
 	).Err(); err != nil {
 		return errors.New("failed to store session in Redis: " + err.Error())
 	}
@@ -146,6 +148,7 @@ func (s *AuthService) ResendOTP(emailStr string) error {
 	}
 
 	data.OTP = hashedOTP
+	data.OTPExpiresAt = time.Now().Add(time.Duration(s.cfg.OTP.ExpiryMinutes) * time.Minute)
 
 	newData, err := json.Marshal(data)
 	if err != nil {
@@ -157,12 +160,12 @@ func (s *AuthService) ResendOTP(emailStr string) error {
 		return err
 	}
 
-	// store updated SignupData in Redis
+	// store updated SignupData in Redis with 24 hours TTL
 	if err := s.redis.Client.Set(
 		cache.Ctx,
 		key,
 		newData,
-		time.Duration(s.cfg.OTP.ExpiryMinutes)*time.Minute,
+		24*time.Hour,
 	).Err(); err != nil {
 		return errors.New("failed to store session in Redis: " + err.Error())
 	}
@@ -192,6 +195,10 @@ func (s *AuthService) VerifyOTP(emailStr, otpCode string) error {
 	var data SignupData
 	if err := json.Unmarshal([]byte(val), &data); err != nil {
 		return errors.New("invalid session data")
+	}
+
+	if time.Now().After(data.OTPExpiresAt) {
+		return errors.New("OTP has expired. Please resend OTP")
 	}
 
 	if !password.ComparePassword(data.OTP, otpCode) {
