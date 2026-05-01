@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
+	"hygienehub/internal/cache"
 	"hygienehub/middleware"
 	"hygienehub/src/controllers"
 	"hygienehub/src/repository"
@@ -17,6 +18,7 @@ func SetUpRoutes(
 	authController *controllers.AuthController,
 	jwtManager *jwt.Manager,
 	repo *repository.Repository,
+	redisCache *cache.Redis,
 ) {
 
 	// ---------------- CORS ----------------
@@ -38,13 +40,13 @@ func SetUpRoutes(
 	// ---------------- AUTH ----------------
 	auth := app.Group("/auth")
 	auth.Post("/signup", authController.Signup)
-	auth.Post("/check", authController.VerifyOTP)
+	auth.Post("/verify", authController.VerifyOTP)
 	auth.Post("/resend-otp", authController.ResendOTP)
 	auth.Post("/login", authController.Login)
 	auth.Post("/refresh", authController.Refresh)
-	auth.Post("/logout", authController.Logout)
+	auth.Post("/logout", middleware.AuthMiddleware(jwtManager, redisCache), authController.Logout)
 
 	// ---------------- USER (Protected) ----------------
-	user := app.Group("/user", middleware.AuthMiddleware(jwtManager))
+	user := app.Group("/user", middleware.AuthMiddleware(jwtManager, redisCache))
 	user.Get("/dashboard", authController.Dashboard)
 }

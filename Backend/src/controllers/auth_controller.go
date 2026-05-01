@@ -189,7 +189,13 @@ func (a *AuthController) Logout(c *fiber.Ctx) error {
 			JSON(validation.FormatValidationErrors(err))
 	}
 
-	err := a.authService.Logout(body.RefreshToken)
+	sessionID, ok := c.Locals("session_id").(string)
+	if !ok || sessionID == "" {
+		return c.Status(constant.UNAUTHORIZED).
+			JSON(fiber.Map{"error": "unauthorized"})
+	}
+
+	err := a.authService.Logout(sessionID, body.RefreshToken)
 	if err != nil {
 		logger.Log.Error("Logout failed:", err)
 		return c.Status(constant.INTERNALSERVERERROR).

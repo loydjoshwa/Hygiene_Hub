@@ -240,14 +240,16 @@ func (s *AuthService) Login(emailStr, passwordStr string) (string, string, *mode
 		return "", "", nil, errors.New("invalid credentials")
 	}
 
+	// generate session id
+	sessionID := uuid.New()
+
 	// generate access token
-	accessToken, err := s.jwtManager.GenerateAccessToken(user.ID.String(), user.Role)
+	accessToken, err := s.jwtManager.GenerateAccessToken(user.ID.String(), user.Role, sessionID.String())
 	if err != nil {
 		return "", "", nil, err
 	}
 
 	// generate refresh token
-	sessionID := uuid.New()
 
 	refreshToken, err := s.jwtManager.GenerateRefreshToken(
 		user.ID.String(),
@@ -282,9 +284,18 @@ func (s *AuthService) Refresh(token string) (string, string, error) {
 		return "", "", errors.New("invalid token")
 	}
 
-	sessionID := claims["session_id"].(string)
-	userID := claims["user_id"].(string)
-	role := claims["role"].(string)
+	sessionID, ok := claims["session_id"].(string)
+	if !ok {
+		return "", "", errors.New("invalid token")
+	}
+	userID, ok := claims["user_id"].(string)
+	if !ok {
+		return "", "", errors.New("invalid token")
+	}
+	role, ok := claims["role"].(string)
+	if !ok {
+		return "", "", errors.New("invalid token")
+	}
 
 	var stored models.RefreshToken
 	err = s.repo.FindOneWhere(&stored, "id = ?", sessionID)
@@ -300,7 +311,7 @@ func (s *AuthService) Refresh(token string) (string, string, error) {
 		return "", "", errors.New("token expired")
 	}
 
-	newAccess, err := s.jwtManager.GenerateAccessToken(userID, role)
+	newAccess, err := s.jwtManager.GenerateAccessToken(userID, role, sessionID)
 	if err != nil {
 		return "", "", err
 	}
@@ -321,14 +332,23 @@ func (s *AuthService) Refresh(token string) (string, string, error) {
 
 //logout
 
-func (s *AuthService) Logout(token string) error {
+func (s *AuthService) Logout(sessionID, refreshToken string) error {
 
-	claims, err := s.jwtManager.ValidateRefresh(token)
+	claims, err := s.jwtManager.ValidateRefresh(refreshToken)
 	if err != nil {
 		return errors.New("invalid token")
 	}
 
-	sessionID := claims["session_id"].(string)
+	refreshSessionID, ok := claims["session_id"].(string)
+	if !ok || refreshSessionID != sessionID {
+		return errors.New("invalid token or session mismatch")
+	}
+
+	// Blacklist the session_id
+	err = s.redis.Client.Set(cache.Ctx, "blacklist:session:"+sessionID, "revoked", time.Duration(s.cfg.JWT.AccessTTLMinutes)*time.Minute).Err()
+	if err != nil {
+		return errors.New("failed to blacklist session: " + err.Error())
+	}
 
 	return s.repo.Delete(&models.RefreshToken{}, sessionID)
 }

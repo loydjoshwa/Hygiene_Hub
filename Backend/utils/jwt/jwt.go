@@ -25,10 +25,11 @@ func NewJWTManager (cfg *config.Config) *Manager {
 	}
 }
 
-func (j *Manager) GenerateAccessToken(userId,role string) (string ,error){
+func (j *Manager) GenerateAccessToken(userId, role, sessionId string) (string ,error){
 	claims:=jwt.MapClaims{
 		"user_id":userId,
 		"role":role,
+		"session_id":sessionId,
 		"exp":time.Now().Add(j.accessTTL).Unix(),
 		}
 		token:=jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
@@ -39,6 +40,7 @@ func (j *Manager) GenerateRefreshToken(userId,role,sessionId string) (string, er
 	claims:=jwt.MapClaims{
 		"user_id":userId,
 		"role":role,
+		"session_id":sessionId,
 		"exp":time.Now().Add(j.refreshTTL).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,claims)

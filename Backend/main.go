@@ -16,7 +16,6 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	
 )
 
 func main() {
@@ -26,35 +25,35 @@ func main() {
 
 	validation.InitValidation()
 
-	db:=database.SetupDatabase(cfg)
+	db := database.SetupDatabase(cfg)
 
 	migration.Migrate(db)
 
-	repo:=repository.SetUpRepo(db)
+	repo := repository.SetUpRepo(db)
 
-	redis:=cache.NewRedis()
+	redis := cache.NewRedis()
 
-	jwtManager:=jwt.NewJWTManager(cfg)
+	jwtManager := jwt.NewJWTManager(cfg)
 
-	emailService:=email.NewEmailService(cfg)
+	emailService := email.NewEmailService(cfg)
 
-	authService:=services.NewAuthService(repo,jwtManager,emailService,redis,cfg)
-    
+	authService := services.NewAuthService(repo, jwtManager, emailService, redis, cfg)
 
-	authController:=controllers.NewAuthController(authService)
+	authController := controllers.NewAuthController(authService)
 
-	app:=fiber.New()
+	app := fiber.New()
 
 	routes.SetUpRoutes(
 		app,
 		authController,
 		jwtManager,
 		repo,
+		redis,
 	)
 
 	logger.Log.Info("Server running on port", cfg.Server.Port)
 
-	if err:=app.Listen(":"+cfg.Server.Port);err!=nil{
-		log.Fatal("server failed to start:",err)
+	if err := app.Listen(":" + cfg.Server.Port); err != nil {
+		log.Fatal("server failed to start:", err)
 	}
 }

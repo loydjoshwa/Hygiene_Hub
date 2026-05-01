@@ -18,6 +18,8 @@ type RefreshToken struct {
 }
 
 func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error{
-	r.ID=uuid.New()
+	if r.ID == uuid.Nil {
+		r.ID = uuid.New()
+	}
 	return nil
 }
