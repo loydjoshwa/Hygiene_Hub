@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
 	"hygienehub/config"
 	"hygienehub/internal/cache"
@@ -15,6 +16,13 @@ import (
 
 	"github.com/google/uuid"
 )
+
+type SignupData struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	OTP      string `json:"otp"`
+}
 
 type AuthService struct {
 	repo         repository.PgSQLRepository
@@ -42,7 +50,7 @@ func NewAuthService(
 
 //signup
 
-func (s *AuthService) Signup(name, emailStr, phone, passwordStr string) error {
+func (s *AuthService) Signup(name, emailStr, passwordStr string) error {
 
 	var existing models.User
 	err := s.repo.FindOneWhere(&existing, "email = ?", emailStr)
@@ -73,28 +81,29 @@ func (s *AuthService) Signup(name, emailStr, phone, passwordStr string) error {
 		return err
 	}
 
-	// create user
-	user := models.User{
-		Name:       name,
-		Email:      emailStr,
-		Password:   hashedPassword,
-		Role:       "user",
-		IsVerified: false,
-		IsBlocked:  false,
+	// serialize signup data
+	data := SignupData{
+		Name:     name,
+		Email:    emailStr,
+		Password: hashedPassword,
+		OTP:      hashedOTP,
 	}
 
-	if err := s.repo.Insert(&user); err != nil {
-		return err
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		return errors.New("failed to process signup data")
 	}
 
-	// store OTP in Redis
+	// store SignupData in Redis
 	key := "otp:verify:" + emailStr
-	s.redis.Client.Set(
+	if err := s.redis.Client.Set(
 		cache.Ctx,
 		key,
-		hashedOTP,
+		dataBytes,
 		time.Duration(s.cfg.OTP.ExpiryMinutes)*time.Minute,
-	)
+	).Err(); err != nil {
+		return errors.New("failed to store session in Redis: " + err.Error())
+	}
 
 	logger.Log.Infof("OTP sent to %s", emailStr)
 
@@ -105,17 +114,23 @@ func (s *AuthService) Signup(name, emailStr, phone, passwordStr string) error {
 
 func (s *AuthService) ResendOTP(emailStr string) error {
 
+	// check if user exists and is verified in Postgres
 	var user models.User
-
-	// check user exists
 	err := s.repo.FindOneWhere(&user, "email = ?", emailStr)
-	if err != nil {
-		return errors.New("user not found")
+	if err == nil && user.IsVerified {
+		return errors.New("user already verified")
 	}
 
-	// already verified?
-	if user.IsVerified {
-		return errors.New("user already verified")
+	// check if signup session exists in Redis
+	key := "otp:verify:" + emailStr
+	val, err := s.redis.Client.Get(cache.Ctx, key).Result()
+	if err != nil {
+		return errors.New("signup session expired or not found")
+	}
+
+	var data SignupData
+	if err := json.Unmarshal([]byte(val), &data); err != nil {
+		return errors.New("invalid session data")
 	}
 
 	// generate OTP
@@ -130,19 +145,27 @@ func (s *AuthService) ResendOTP(emailStr string) error {
 		return err
 	}
 
+	data.OTP = hashedOTP
+
+	newData, err := json.Marshal(data)
+	if err != nil {
+		return errors.New("failed to process session data")
+	}
+
 	// send email
 	if err := s.emailService.SendOTP(emailStr, otpCode); err != nil {
 		return err
 	}
 
-	// store OTP in Redis (overwrite old)
-	key := "otp:verify:" + emailStr
-	s.redis.Client.Set(
+	// store updated SignupData in Redis
+	if err := s.redis.Client.Set(
 		cache.Ctx,
 		key,
-		hashedOTP,
+		newData,
 		time.Duration(s.cfg.OTP.ExpiryMinutes)*time.Minute,
-	)
+	).Err(); err != nil {
+		return errors.New("failed to store session in Redis: " + err.Error())
+	}
 
 	logger.Log.Infof("OTP resent to %s", emailStr)
 
@@ -155,30 +178,37 @@ func (s *AuthService) VerifyOTP(emailStr, otpCode string) error {
 
 	var user models.User
 	err := s.repo.FindOneWhere(&user, "email = ?", emailStr)
-	if err != nil {
-		return errors.New("user not found")
-	}
-
-	if user.IsVerified {
+	if err == nil && user.IsVerified {
 		return errors.New("already verified")
 	}
 
 	key := "otp:verify:" + emailStr
 
-	storedOTP, err := s.redis.Client.Get(cache.Ctx, key).Result()
+	val, err := s.redis.Client.Get(cache.Ctx, key).Result()
 	if err != nil {
-		return errors.New("OTP expired")
+		return errors.New("OTP expired or session not found")
 	}
 
-	if !password.ComparePassword(storedOTP, otpCode) {
+	var data SignupData
+	if err := json.Unmarshal([]byte(val), &data); err != nil {
+		return errors.New("invalid session data")
+	}
+
+	if !password.ComparePassword(data.OTP, otpCode) {
 		return errors.New("invalid OTP")
 	}
 
-	updates := map[string]interface{}{
-		"is_verified": true,
+	// create user in Postgres now that OTP is valid
+	newUser := models.User{
+		Name:       data.Name,
+		Email:      data.Email,
+		Password:   data.Password,
+		Role:       "user",
+		IsVerified: true,
+		IsBlocked:  false,
 	}
 
-	if err := s.repo.UpdateByFields(&models.User{}, user.ID, updates); err != nil {
+	if err := s.repo.Insert(&newUser); err != nil {
 		return err
 	}
 

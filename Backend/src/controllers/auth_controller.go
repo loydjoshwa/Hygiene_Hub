@@ -17,24 +17,23 @@ func NewAuthController(service *services.AuthService) *AuthController {
 }
 
 type SignupRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
+	Name     string `json:"name" validate:"required,name"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,password"`
 }
 
 type VerifyOTP struct {
-	Email string `json:"email"`
-	OTP   string `json:"otp"`
+	Email string `json:"email" validate:"required,email"`
+	OTP   string `json:"otp" validate:"required"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 type ResendOTPRequest struct {
-	Email string `json:"email"`
+	Email string `json:"email" validate:"required,email"`
 }
 
 //signup
@@ -47,9 +46,14 @@ func (a *AuthController) Signup(c *fiber.Ctx) error {
 			JSON(validation.FormatValidationErrors(err))
 	}
 
+	if err := validation.ValidateStruct(&req); err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(validation.FormatValidationErrors(err))
+	}
+
 	logger.Log.Info("Signup:", req.Email)
 
-	err := a.authService.Signup(req.Name, req.Email, req.Phone, req.Password)
+	err := a.authService.Signup(req.Name, req.Email, req.Password)
 	if err != nil {
 		logger.Log.Error("Signup failed:", err)
 		return c.Status(constant.BADREQUEST).
@@ -66,6 +70,11 @@ func (a *AuthController) VerifyOTP(c *fiber.Ctx) error {
 	var req VerifyOTP
 
 	if err := c.BodyParser(&req); err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(validation.FormatValidationErrors(err))
+	}
+
+	if err := validation.ValidateStruct(&req); err != nil {
 		return c.Status(constant.BADREQUEST).
 			JSON(validation.FormatValidationErrors(err))
 	}
@@ -91,6 +100,11 @@ func (a *AuthController) ResendOTP(c *fiber.Ctx) error {
 			JSON(validation.FormatValidationErrors(err))
 	}
 
+	if err := validation.ValidateStruct(&req); err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(validation.FormatValidationErrors(err))
+	}
+
 	if err := a.authService.ResendOTP(req.Email); err != nil {
 		return c.Status(constant.BADREQUEST).
 			JSON(fiber.Map{"error": err.Error()})
@@ -106,6 +120,11 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 
 	if err := c.BodyParser(&req); err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(validation.FormatValidationErrors(err))
+	}
+
+	if err := validation.ValidateStruct(&req); err != nil {
 		return c.Status(constant.BADREQUEST).
 			JSON(validation.FormatValidationErrors(err))
 	}
@@ -128,10 +147,15 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 
 func (a *AuthController) Refresh(c *fiber.Ctx) error {
 	var body struct {
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refresh_token" validate:"required"`
 	}
 
 	if err := c.BodyParser(&body); err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(validation.FormatValidationErrors(err))
+	}
+
+	if err := validation.ValidateStruct(&body); err != nil {
 		return c.Status(constant.BADREQUEST).
 			JSON(validation.FormatValidationErrors(err))
 	}
@@ -152,10 +176,15 @@ func (a *AuthController) Refresh(c *fiber.Ctx) error {
 //logout
 func (a *AuthController) Logout(c *fiber.Ctx) error {
 	var body struct {
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refresh_token" validate:"required"`
 	}
 
 	if err := c.BodyParser(&body); err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(validation.FormatValidationErrors(err))
+	}
+
+	if err := validation.ValidateStruct(&body); err != nil {
 		return c.Status(constant.BADREQUEST).
 			JSON(validation.FormatValidationErrors(err))
 	}
