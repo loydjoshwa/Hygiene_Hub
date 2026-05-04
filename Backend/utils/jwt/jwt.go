@@ -2,7 +2,7 @@ package jwt
 
 import (
 	"errors"
-	"hygienehub/config"
+	"hygienehub/src/models"
 	"time"
 	"github.com/golang-jwt/jwt"
 )
@@ -15,7 +15,7 @@ type Manager struct {
 	maxSession  time.Duration
 }
 
-func NewJWTManager (cfg *config.Config) *Manager {
+func NewJWTManager (cfg *models.Config) *Manager {
 	return &Manager{
 		accessSecret:cfg.JWT.AccessSecret,
 		refreshSecret: cfg.JWT.RefreshSecret,

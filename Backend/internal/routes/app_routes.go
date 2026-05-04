@@ -9,7 +9,6 @@ import (
 	"hygienehub/internal/cache"
 	"hygienehub/middleware"
 	"hygienehub/src/controllers"
-	"hygienehub/src/repository"
 	"hygienehub/utils/jwt"
 )
 
@@ -17,7 +16,6 @@ func SetUpRoutes(
 	app *fiber.App,
 	authController *controllers.AuthController,
 	jwtManager *jwt.Manager,
-	repo *repository.Repository,
 	redisCache *cache.Redis,
 ) {
 
@@ -44,6 +42,8 @@ func SetUpRoutes(
 	auth.Post("/resend-otp", authController.ResendOTP)
 	auth.Post("/login", authController.Login)
 	auth.Post("/refresh", authController.Refresh)
+	auth.Post("/forgot-password", authController.ForgotPassword)
+	auth.Post("/reset-password", authController.ResetPassword)
 	auth.Post("/logout", middleware.AuthMiddleware(jwtManager, redisCache), authController.Logout)
 
 	// ---------------- USER (Protected) ----------------

@@ -9,77 +9,58 @@ import (
 )
 
 var (
-	validate  = validator.New()
-	nameRegex = regexp.MustCompile(`^[a-zA-Z\s]{3,}$`)
+	validate      = validator.New()
+	nameRegex     = regexp.MustCompile(`^[a-zA-Z\s]{3,}$`)
+	hasUpperRegex = regexp.MustCompile(`[A-Z]`)
+	hasLowerRegex = regexp.MustCompile(`[a-z]`)
+
+	// errorMsgs simplifies mapping validation tags to error messages
+	errorMsgs = map[string]func(validator.FieldError) string{
+		"required": func(e validator.FieldError) string { return fmt.Sprintf("%s is required", e.Field()) },
+		"email":    func(e validator.FieldError) string { return fmt.Sprintf("%s must be a valid email", e.Field()) },
+		"name":     func(e validator.FieldError) string { return fmt.Sprintf("%s must contain at least 3 letters", e.Field()) },
+		"password": func(e validator.FieldError) string { return fmt.Sprintf("%s must contain uppercase and lowercase letters", e.Field()) },
+		"eqfield":  func(e validator.FieldError) string { return fmt.Sprintf("%s must match %s", e.Field(), e.Param()) },
+	}
 )
 
-// 🔹 Initialize custom validations
+// InitValidation initializes custom validations.
 func InitValidation() {
 	validate.RegisterValidation("name", validateName)
 	validate.RegisterValidation("password", validatePassword)
 }
 
-// 🔹 Name validation (min 3 letters, letters + spaces)
+// validateName ensures the name contains at least 3 letters.
 func validateName(fl validator.FieldLevel) bool {
 	return nameRegex.MatchString(fl.Field().String())
 }
 
-// 🔹 Password validation
+// validatePassword ensures password is 6-20 chars with uppercase and lowercase.
 func validatePassword(fl validator.FieldLevel) bool {
-	password := fl.Field().String()
-
-	if len(password) < 6 || len(password) > 20 {
-		return false
-	}
-
-	var hasUpper, hasLower bool
-
-	for _, ch := range password {
-		switch {
-		case 'A' <= ch && ch <= 'Z':
-			hasUpper = true
-		case 'a' <= ch && ch <= 'z':
-			hasLower = true
-		}
-	}
-
-	return hasUpper && hasLower
+	p := fl.Field().String()
+	return len(p) >= 6 && len(p) <= 20 && hasUpperRegex.MatchString(p) && hasLowerRegex.MatchString(p)
 }
 
-// 🔹 Validate struct manually (Fiber style)
+// ValidateStruct manually validates a struct.
 func ValidateStruct(data interface{}) error {
 	return validate.Struct(data)
 }
 
-// 🔹 Format errors for response
+// FormatValidationErrors formats the errors for JSON responses.
 func FormatValidationErrors(err error) fiber.Map {
-	var errors []string
+	var errList []string
 
-	if validationErrors, ok := err.(validator.ValidationErrors); ok {
-		for _, e := range validationErrors {
-			switch e.Tag() {
-
-			case "required":
-				errors = append(errors, fmt.Sprintf("%s is required", e.Field()))
-
-			case "email":
-				errors = append(errors, fmt.Sprintf("%s must be a valid email", e.Field()))
-
-			case "name":
-				errors = append(errors, fmt.Sprintf("%s must contain at least 3 letters", e.Field()))
-
-			case "password":
-				errors = append(errors, fmt.Sprintf("%s must contain uppercase and lowercase letters", e.Field()))
-
-			default:
-				errors = append(errors, fmt.Sprintf("%s is invalid", e.Field()))
+	if valErrs, ok := err.(validator.ValidationErrors); ok {
+		for _, e := range valErrs {
+			if msgFunc, exists := errorMsgs[e.Tag()]; exists {
+				errList = append(errList, msgFunc(e))
+			} else {
+				errList = append(errList, fmt.Sprintf("%s is invalid", e.Field()))
 			}
 		}
 	} else {
-		errors = append(errors, "Invalid request")
+		errList = append(errList, "Invalid request")
 	}
 
-	return fiber.Map{
-		"errors": errors,
-	}
+	return fiber.Map{"errors": errList}
 }

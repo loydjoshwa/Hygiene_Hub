@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type RefreshToken struct {
@@ -16,10 +15,4 @@ type RefreshToken struct {
 	UpdatedAt time.Time 
 	User  User `gorm:"foreignKey:UserID"`
 }
-
-func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error{
-	if r.ID == uuid.Nil {
-		r.ID = uuid.New()
-	}
-	return nil
-}
+

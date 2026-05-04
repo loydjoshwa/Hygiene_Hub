@@ -2,7 +2,7 @@ package cache
 
 import (
 	"context"
-	"os"
+	"hygienehub/src/models"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -13,12 +13,12 @@ type Redis struct {
 	Client *redis.Client
 }
 
-func NewRedis() *Redis {
-	addr := os.Getenv("REDIS_HOST")
+func NewRedis(cfg *models.Config) *Redis {
+	addr := cfg.Redis.Host
 	if addr == "" {
 		addr = "127.0.0.1"
 	}
-	port := os.Getenv("REDIS_PORT")
+	port := cfg.Redis.Port
 	if port == "" {
 		port = "6379"
 	}

@@ -4,52 +4,19 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"hygienehub/src/models"
 
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	Server struct {
-		Port string
-	}
-	DB struct {
-		Host     string
-		Port     int
-		User     string
-		Password string
-		Name     string
-		SSLMode  string
-		TimeZone string
-	}
-
-	JWT struct {
-		AccessSecret  string
-		RefreshSecret   string
-		AccessTTLMinutes int
-		RefreshTTLHours  int
-		MaxSessionHours  int
-	}
-	SMTP struct {
-		Host     string
-		Port     int
-		Username string
-		Password string
-		From     string
-	}
-
-	OTP struct {
-		Length        int
-		ExpiryMinutes int
-	}
-}
-func LoadConfig() *Config {
+func LoadConfig() *models.Config {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Println("No .env file found")
 	}
 	log.Println("ENV DB_HOST:", os.Getenv("DB_HOST"))
 
-	cfg := &Config{}
+	cfg := &models.Config{}
 
 	cfg.Server.Port = getEnv("SERVER_PORT", "8080")
 
@@ -79,6 +46,10 @@ func LoadConfig() *Config {
 	//otp
 	cfg.OTP.Length = getEnvAsInt("OTP_LENGTH", 5)
 	cfg.OTP.ExpiryMinutes = getEnvAsInt("OTP_EXPIRY_MINUTES", 5)
+
+	//redis
+	cfg.Redis.Host = getEnv("REDIS_HOST", "127.0.0.1")
+	cfg.Redis.Port = getEnv("REDIS_PORT", "6379")
 
 	return cfg
 }

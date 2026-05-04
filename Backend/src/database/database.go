@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"sync"
-	"hygienehub/config"
+	"hygienehub/src/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,7 +11,7 @@ import (
 
 var pgOnce sync.Once
 
-func SetupDatabase(cfg *config.Config) (*gorm.DB) {
+func SetupDatabase(cfg *models.Config) (*gorm.DB) {
 	var pgDB *gorm.DB
 	pgOnce.Do(func()  {
 		

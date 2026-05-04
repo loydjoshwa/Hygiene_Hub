@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"hygienehub/src/models"
 	"hygienehub/src/services"
 	"hygienehub/utils/constant"
 	"hygienehub/utils/logger"
@@ -16,39 +17,23 @@ func NewAuthController(service *services.AuthService) *AuthController {
 	return &AuthController{authService: service}
 }
 
-type SignupRequest struct {
-	Name     string `json:"name" validate:"required,name"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,password"`
-}
-
-type VerifyOTP struct {
-	Email string `json:"email" validate:"required,email"`
-	OTP   string `json:"otp" validate:"required"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
-}
-
-type ResendOTPRequest struct {
-	Email string `json:"email" validate:"required,email"`
+func parseAndValidate(c *fiber.Ctx, req interface{}) error {
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(constant.BADREQUEST).JSON(fiber.Map{"error": "Invalid request body: " + err.Error()})
+	}
+	if err := validation.ValidateStruct(req); err != nil {
+		return c.Status(constant.BADREQUEST).JSON(validation.FormatValidationErrors(err))
+	}
+	return nil
 }
 
 //signup
 
 func (a *AuthController) Signup(c *fiber.Ctx) error {
-	var req SignupRequest
+	var req models.SignupRequest
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
-	}
-
-	if err := validation.ValidateStruct(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
+	if err := parseAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	logger.Log.Info("Signup:", req.Email)
@@ -67,16 +52,10 @@ func (a *AuthController) Signup(c *fiber.Ctx) error {
 
 //verify otp
 func (a *AuthController) VerifyOTP(c *fiber.Ctx) error {
-	var req VerifyOTP
+	var req models.VerifyOTPRequest
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
-	}
-
-	if err := validation.ValidateStruct(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
+	if err := parseAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	err := a.authService.VerifyOTP(req.Email, req.OTP)
@@ -93,16 +72,10 @@ func (a *AuthController) VerifyOTP(c *fiber.Ctx) error {
 
 //resend otp
 func (a *AuthController) ResendOTP(c *fiber.Ctx) error {
-	var req ResendOTPRequest
+	var req models.ResendOTPRequest
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
-	}
-
-	if err := validation.ValidateStruct(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
+	if err := parseAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	if err := a.authService.ResendOTP(req.Email); err != nil {
@@ -117,16 +90,10 @@ func (a *AuthController) ResendOTP(c *fiber.Ctx) error {
 //login
 
 func (a *AuthController) Login(c *fiber.Ctx) error {
-	var req LoginRequest
+	var req models.LoginRequest
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
-	}
-
-	if err := validation.ValidateStruct(&req); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
+	if err := parseAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	access, refresh, user, err := a.authService.Login(req.Email, req.Password)
@@ -146,18 +113,10 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 //refresh token
 
 func (a *AuthController) Refresh(c *fiber.Ctx) error {
-	var body struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
-	}
+	var body models.RefreshTokenRequest
 
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
-	}
-
-	if err := validation.ValidateStruct(&body); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
+	if err := parseAndValidate(c, &body); err != nil {
+		return err
 	}
 
 	newAccess, newRefresh, err := a.authService.Refresh(body.RefreshToken)
@@ -175,18 +134,10 @@ func (a *AuthController) Refresh(c *fiber.Ctx) error {
 
 //logout
 func (a *AuthController) Logout(c *fiber.Ctx) error {
-	var body struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
-	}
+	var body models.LogoutRequest
 
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
-	}
-
-	if err := validation.ValidateStruct(&body); err != nil {
-		return c.Status(constant.BADREQUEST).
-			JSON(validation.FormatValidationErrors(err))
+	if err := parseAndValidate(c, &body); err != nil {
+		return err
 	}
 
 	sessionID, ok := c.Locals("session_id").(string)
@@ -230,6 +181,44 @@ func (a *AuthController) Dashboard(c *fiber.Ctx) error {
 		"user_id": userID,
 		"name":    user.Name,
 		"role":    role,
+	})
+}
+
+//forgot password
+func (a *AuthController) ForgotPassword(c *fiber.Ctx) error {
+	var req models.ForgotPasswordRequest
+
+	if err := parseAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	err := a.authService.ForgotPassword(req.Email)
+	if err != nil {
+		logger.Log.Error("Forgot Password failed:", err)
+		return c.Status(constant.BADREQUEST).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(constant.SUCCESS).JSON(fiber.Map{
+		"message": "OTP sent successfully",
+	})
+}
+
+//reset password
+func (a *AuthController) ResetPassword(c *fiber.Ctx) error {
+	var req models.ResetPasswordRequest
+
+	if err := parseAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	err := a.authService.ResetPassword(req.Email, req.OTP, req.NewPassword)
+	if err != nil {
+		logger.Log.Error("Reset Password failed:", err)
+		return c.Status(constant.BADREQUEST).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(constant.SUCCESS).JSON(fiber.Map{
+		"message": "Password has been successfully reset.",
 	})
 }
 

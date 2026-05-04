@@ -31,7 +31,7 @@ func main() {
 
 	repo := repository.SetUpRepo(db)
 
-	redis := cache.NewRedis()
+	redis := cache.NewRedis(cfg)
 
 	jwtManager := jwt.NewJWTManager(cfg)
 
@@ -47,7 +47,6 @@ func main() {
 		app,
 		authController,
 		jwtManager,
-		repo,
 		redis,
 	)
 
