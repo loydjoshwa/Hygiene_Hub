@@ -1,10 +1,10 @@
 package config
 
 import (
+	"hygienehub/src/models"
 	"log"
 	"os"
 	"strconv"
-	"hygienehub/src/models"
 
 	"github.com/joho/godotenv"
 )

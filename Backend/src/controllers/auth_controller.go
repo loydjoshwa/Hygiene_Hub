@@ -1,12 +1,13 @@
 package controllers
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"hygienehub/src/models"
+	"hygienehub/src/dto"
 	"hygienehub/src/services"
 	"hygienehub/utils/constant"
 	"hygienehub/utils/logger"
 	"hygienehub/utils/validation"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type AuthController struct {
@@ -17,26 +18,28 @@ func NewAuthController(service *services.AuthService) *AuthController {
 	return &AuthController{authService: service}
 }
 
+// 🔹 Helper: Parse + Validate
 func parseAndValidate(c *fiber.Ctx, req interface{}) error {
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(constant.BADREQUEST).JSON(fiber.Map{"error": "Invalid request body: " + err.Error()})
+		return c.Status(constant.BADREQUEST).
+			JSON(fiber.Map{"error": "Invalid request body"})
 	}
+
 	if err := validation.ValidateStruct(req); err != nil {
-		return c.Status(constant.BADREQUEST).JSON(validation.FormatValidationErrors(err))
+		return c.Status(constant.BADREQUEST).
+			JSON(validation.FormatValidationErrors(err))
 	}
+
 	return nil
 }
 
-//signup
-
+// 📝 Signup
 func (a *AuthController) Signup(c *fiber.Ctx) error {
-	var req models.SignupRequest
+	var req dto.SignupRequest
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err
 	}
-
-	logger.Log.Info("Signup:", req.Email)
 
 	err := a.authService.Signup(req.Name, req.Email, req.Password)
 	if err != nil {
@@ -45,34 +48,33 @@ func (a *AuthController) Signup(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"message": "Signup successful, OTP sent",
 	})
 }
 
-//verify otp
+// ✅ Verify OTP
 func (a *AuthController) VerifyOTP(c *fiber.Ctx) error {
-	var req models.VerifyOTPRequest
+	var req dto.VerifyOTPRequest
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err
 	}
 
-	err := a.authService.VerifyOTP(req.Email, req.OTP)
-	if err != nil {
+	if err := a.authService.VerifyOTP(req.Email, req.OTP); err != nil {
 		logger.Log.Warn("OTP failed:", err)
 		return c.Status(constant.BADREQUEST).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"message": "Account verified",
 	})
 }
 
-//resend otp
+// 🔁 Resend OTP
 func (a *AuthController) ResendOTP(c *fiber.Ctx) error {
-	var req models.ResendOTPRequest
+	var req dto.ResendOTPRequest
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err
@@ -83,14 +85,14 @@ func (a *AuthController) ResendOTP(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).
-		JSON(fiber.Map{"message": "OTP resent successfully"})
+	return c.JSON(fiber.Map{
+		"message": "OTP resent successfully",
+	})
 }
 
-//login
-
+// 🔐 Login
 func (a *AuthController) Login(c *fiber.Ctx) error {
-	var req models.LoginRequest
+	var req dto.LoginRequest
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err
@@ -103,122 +105,118 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"access_token":  access,
 		"refresh_token": refresh,
 		"role":          user.Role,
 	})
 }
 
-//refresh token
-
+// 🔄 Refresh Token
 func (a *AuthController) Refresh(c *fiber.Ctx) error {
-	var body models.RefreshTokenRequest
+	var req dto.RefreshTokenRequest
 
-	if err := parseAndValidate(c, &body); err != nil {
+	if err := parseAndValidate(c, &req); err != nil {
 		return err
 	}
 
-	newAccess, newRefresh, err := a.authService.Refresh(body.RefreshToken)
+	access, refresh, err := a.authService.Refresh(req.RefreshToken)
 	if err != nil {
-		logger.Log.Warn("Refresh failed", err)
+		logger.Log.Warn("Refresh failed:", err)
 		return c.Status(constant.UNAUTHORIZED).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
-		"new_access_token":  newAccess,
-		"new_refresh_token": newRefresh,
+	return c.JSON(fiber.Map{
+		"access_token":  access,
+		"refresh_token": refresh,
 	})
 }
 
-//logout
+// 🚪 Logout
 func (a *AuthController) Logout(c *fiber.Ctx) error {
-	var body models.LogoutRequest
+	var req dto.LogoutRequest
 
-	if err := parseAndValidate(c, &body); err != nil {
+	if err := parseAndValidate(c, &req); err != nil {
 		return err
 	}
 
 	sessionID, ok := c.Locals("session_id").(string)
 	if !ok || sessionID == "" {
 		return c.Status(constant.UNAUTHORIZED).
-			JSON(fiber.Map{"error": "unauthorized"})
+			JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	err := a.authService.Logout(sessionID, body.RefreshToken)
-	if err != nil {
+	if err := a.authService.Logout(sessionID, req.RefreshToken); err != nil {
 		logger.Log.Error("Logout failed:", err)
 		return c.Status(constant.INTERNALSERVERERROR).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).
-		JSON(fiber.Map{"message": "Logged out successfully"})
+	return c.JSON(fiber.Map{
+		"message": "Logged out successfully",
+	})
 }
 
+// 🛡️ Dashboard (Protected Route)
 func (a *AuthController) Dashboard(c *fiber.Ctx) error {
 
-	// get values set by middleware
 	userID, ok := c.Locals("user_id").(string)
 	if !ok || userID == "" {
 		return c.Status(constant.UNAUTHORIZED).
-			JSON(fiber.Map{"error": "unauthorized"})
+			JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
 	role, _ := c.Locals("role").(string)
 
-	// fetch user from service
 	user, err := a.authService.GetUserByID(userID)
 	if err != nil {
 		return c.Status(constant.INTERNALSERVERERROR).
-			JSON(fiber.Map{"error": "failed to get user info"})
+			JSON(fiber.Map{"error": "Failed to get user"})
 	}
 
-	// response
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
-		"message": "Welcome to User Dashboard",
+	return c.JSON(fiber.Map{
+		"message": "Welcome to Dashboard",
 		"user_id": userID,
 		"name":    user.Name,
 		"role":    role,
 	})
 }
 
-//forgot password
+// 🔐 Forgot Password
 func (a *AuthController) ForgotPassword(c *fiber.Ctx) error {
-	var req models.ForgotPasswordRequest
+	var req dto.ForgotPasswordRequest
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err
 	}
 
-	err := a.authService.ForgotPassword(req.Email)
-	if err != nil {
+	if err := a.authService.ForgotPassword(req.Email); err != nil {
 		logger.Log.Error("Forgot Password failed:", err)
-		return c.Status(constant.BADREQUEST).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(constant.BADREQUEST).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"message": "OTP sent successfully",
 	})
 }
 
-//reset password
+// 🔑 Reset Password
 func (a *AuthController) ResetPassword(c *fiber.Ctx) error {
-	var req models.ResetPasswordRequest
+	var req dto.ResetPasswordRequest
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err
 	}
 
-	err := a.authService.ResetPassword(req.Email, req.OTP, req.NewPassword)
-	if err != nil {
+	if err := a.authService.ResetPassword(req.Email, req.OTP, req.NewPassword); err != nil {
 		logger.Log.Error("Reset Password failed:", err)
-		return c.Status(constant.BADREQUEST).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(constant.BADREQUEST).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
-		"message": "Password has been successfully reset.",
+	return c.JSON(fiber.Map{
+		"message": "Password reset successful",
 	})
 }
-

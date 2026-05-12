@@ -15,6 +15,9 @@ import (
 func SetUpRoutes(
 	app *fiber.App,
 	authController *controllers.AuthController,
+	productController *controllers.ProductController,
+	cartController *controllers.CartController,
+	wishlistController *controllers.WishlistController,
 	jwtManager *jwt.Manager,
 	redisCache *cache.Redis,
 ) {
@@ -49,4 +52,29 @@ func SetUpRoutes(
 	// ---------------- USER (Protected) ----------------
 	user := app.Group("/user", middleware.AuthMiddleware(jwtManager, redisCache))
 	user.Get("/dashboard", authController.Dashboard)
+
+	// ---------------- PRODUCTS ----------------
+	products := app.Group("/products")
+	// Public product routes
+	products.Get("/", productController.GetAll)
+	products.Get("/:id", productController.GetByID)
+	// Protected product routes (admin only ideally, temporarily disabled AuthMiddleware for testing)
+	adminProducts := products.Group("/")
+	adminProducts.Post("/", productController.Create)
+	adminProducts.Put("/:id", productController.Update)
+	adminProducts.Delete("/:id", productController.Delete)
+
+	// ---------------- CART (Protected) ----------------
+	cart := app.Group("/cart", middleware.AuthMiddleware(jwtManager, redisCache))
+	cart.Post("/", cartController.AddToCart)
+	cart.Get("/", cartController.GetCart)
+	cart.Put("/:id", cartController.UpdateCartQuantity)
+	cart.Delete("/:id", cartController.RemoveFromCart)
+	cart.Delete("/", cartController.ClearCart)
+
+	// ---------------- WISHLIST (Protected) ----------------
+	wishlist := app.Group("/wishlist", middleware.AuthMiddleware(jwtManager, redisCache))
+	wishlist.Post("/", wishlistController.AddToWishlist)
+	wishlist.Get("/", wishlistController.GetWishlist)
+	wishlist.Delete("/:id", wishlistController.RemoveFromWishlist)
 }

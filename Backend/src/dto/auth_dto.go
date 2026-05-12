@@ -1,4 +1,4 @@
-package models
+package dto
 
 type SignupRequest struct {
 	Name            string `json:"name" validate:"required,name"`
@@ -9,7 +9,7 @@ type SignupRequest struct {
 
 type VerifyOTPRequest struct {
 	Email string `json:"email" validate:"required,email"`
-	OTP   string `json:"otp" validate:"required"`
+	OTP   string `json:"otp" validate:"required,len=5,numeric"`
 }
 
 type LoginRequest struct {
@@ -35,7 +35,7 @@ type ForgotPasswordRequest struct {
 
 type ResetPasswordRequest struct {
 	Email           string `json:"email" validate:"required,email"`
-	OTP             string `json:"otp" validate:"required"`
+	OTP             string `json:"otp" validate:"required,len=5,numeric"`
 	NewPassword     string `json:"new_password" validate:"required,password"`
 	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
 }

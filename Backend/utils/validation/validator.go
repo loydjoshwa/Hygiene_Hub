@@ -21,6 +21,8 @@ var (
 		"name":     func(e validator.FieldError) string { return fmt.Sprintf("%s must contain at least 3 letters", e.Field()) },
 		"password": func(e validator.FieldError) string { return fmt.Sprintf("%s must contain uppercase and lowercase letters", e.Field()) },
 		"eqfield":  func(e validator.FieldError) string { return fmt.Sprintf("%s must match %s", e.Field(), e.Param()) },
+		"len":      func(e validator.FieldError) string { return fmt.Sprintf("%s must be exactly %s characters", e.Field(), e.Param()) },
+		"numeric":  func(e validator.FieldError) string { return fmt.Sprintf("%s must contain only numbers", e.Field()) },
 	}
 )
 

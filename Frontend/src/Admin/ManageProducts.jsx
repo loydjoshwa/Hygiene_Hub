@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosInstance';
 import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -19,11 +19,11 @@ const ManageProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get("http://localhost:3130/products");
+      const response = await axiosInstance.get("/products");
       setProducts(response.data || []);
       setLoading(false);
-    } catch {
-      toast.error("Failed to load products");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to load products");
       setLoading(false);
     }
   };
@@ -55,16 +55,13 @@ const ManageProducts = () => {
         };
 
         if (editingProduct) {
-          await axios.put(
-            `http://localhost:3130/products/${editingProduct.id}`,
+          await axiosInstance.put(
+            `/products/${editingProduct.id}`,
             product
           );
           toast.success("Product updated!");
         } else {
-          await axios.post("http://localhost:3130/products", {
-            ...product,
-            id: `p${Date.now()}`
-          });
+          await axiosInstance.post("/products", product);
           toast.success("Product added!");
         }
 
@@ -72,8 +69,8 @@ const ManageProducts = () => {
         setShowModal(false);
         setEditingProduct(null);
         formik.resetForm();
-      } catch {
-        toast.error("Failed to save product");
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to save product");
       }
     },
   });
@@ -96,11 +93,11 @@ const ManageProducts = () => {
     if (!window.confirm("Delete?")) return;
 
     try {
-      await axios.delete(`http://localhost:3130/products/${id}`);
+      await axiosInstance.delete(`/products/${id}`);
       setProducts(products.filter((p) => p.id !== id));
       toast.success("Product deleted!");
-    } catch {
-      toast.error("Delete failed");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Delete failed");
     }
   };
 

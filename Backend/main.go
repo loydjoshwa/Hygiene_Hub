@@ -30,6 +30,7 @@ func main() {
 	migration.Migrate(db)
 
 	repo := repository.SetUpRepo(db)
+	cartRepo := repository.NewCartRepository(db)
 
 	redis := cache.NewRedis(cfg)
 
@@ -38,14 +39,23 @@ func main() {
 	emailService := email.NewEmailService(cfg)
 
 	authService := services.NewAuthService(repo, jwtManager, emailService, redis, cfg)
+	productService := services.NewProductService(repo)
+	cartService := services.NewCartService(cartRepo)
+	wishlistService := services.NewWishlistService(repo)
 
 	authController := controllers.NewAuthController(authService)
+	productController := controllers.NewProductController(productService)
+	cartController := controllers.NewCartController(cartService)
+	wishlistController := controllers.NewWishlistController(wishlistService)
 
 	app := fiber.New()
 
 	routes.SetUpRoutes(
 		app,
 		authController,
+		productController,
+		cartController,
+		wishlistController,
 		jwtManager,
 		redis,
 	)
