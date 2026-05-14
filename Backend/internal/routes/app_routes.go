@@ -3,13 +3,13 @@ package routes
 import (
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-
 	"hygienehub/internal/cache"
 	"hygienehub/middleware"
 	"hygienehub/src/controllers"
 	"hygienehub/utils/jwt"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func SetUpRoutes(
@@ -18,28 +18,31 @@ func SetUpRoutes(
 	productController *controllers.ProductController,
 	cartController *controllers.CartController,
 	wishlistController *controllers.WishlistController,
+	uploadController *controllers.UploadController,
+	userController *controllers.UserController,
 	jwtManager *jwt.Manager,
 	redisCache *cache.Redis,
 ) {
 
-	// ---------------- CORS ----------------
+	// ================= CORS =================
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "*",
 		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
-		AllowCredentials: false, // IMPORTANT: must be false when using "*"
+		AllowCredentials: false,
 		MaxAge:           int((12 * time.Hour).Seconds()),
 	}))
 
-	// ---------------- TEST ----------------
+	// ================= TEST =================
 	app.Get("/api/test", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"message": "backend connected",
 		})
 	})
 
-	// ---------------- AUTH ----------------
+	// ================= AUTH ROUTES =================
 	auth := app.Group("/auth")
+
 	auth.Post("/signup", authController.Signup)
 	auth.Post("/verify", authController.VerifyOTP)
 	auth.Post("/resend-otp", authController.ResendOTP)
@@ -47,34 +50,71 @@ func SetUpRoutes(
 	auth.Post("/refresh", authController.Refresh)
 	auth.Post("/forgot-password", authController.ForgotPassword)
 	auth.Post("/reset-password", authController.ResetPassword)
-	auth.Post("/logout", middleware.AuthMiddleware(jwtManager, redisCache), authController.Logout)
 
-	// ---------------- USER (Protected) ----------------
-	user := app.Group("/user", middleware.AuthMiddleware(jwtManager, redisCache))
+	auth.Post(
+		"/logout",
+		middleware.AuthMiddleware(jwtManager, redisCache),
+		authController.Logout,
+	)
+
+	// ================= USER ROUTES =================
+	user := app.Group(
+		"/user",
+		middleware.AuthMiddleware(jwtManager, redisCache),
+	)
+
 	user.Get("/dashboard", authController.Dashboard)
 
-	// ---------------- PRODUCTS ----------------
+	// ================= ADMIN USER ROUTES =================
+	adminUsers := app.Group(
+		"/admin/users",
+		middleware.AuthMiddleware(jwtManager, redisCache),
+		middleware.AdminMiddleware(),
+	)
+	adminUsers.Get("/", userController.GetAllUsers)
+	adminUsers.Patch("/:id/block", userController.BlockUser)
+	adminUsers.Patch("/:id/unblock", userController.UnblockUser)
+
+	// ================= PRODUCT ROUTES =================
 	products := app.Group("/products")
-	// Public product routes
+
+	// Public Routes
 	products.Get("/", productController.GetAll)
 	products.Get("/:id", productController.GetByID)
-	// Protected product routes (admin only ideally, temporarily disabled AuthMiddleware for testing)
-	adminProducts := products.Group("/")
+
+	// Admin Routes
+	adminProducts := products.Group(
+		"/",
+		middleware.AuthMiddleware(jwtManager, redisCache),
+		middleware.AdminMiddleware(),
+	)
+
 	adminProducts.Post("/", productController.Create)
 	adminProducts.Put("/:id", productController.Update)
 	adminProducts.Delete("/:id", productController.Delete)
 
-	// ---------------- CART (Protected) ----------------
-	cart := app.Group("/cart", middleware.AuthMiddleware(jwtManager, redisCache))
+	// ================= CART ROUTES =================
+	cart := app.Group(
+		"/cart",
+		middleware.AuthMiddleware(jwtManager, redisCache),
+	)
+
 	cart.Post("/", cartController.AddToCart)
 	cart.Get("/", cartController.GetCart)
 	cart.Put("/:id", cartController.UpdateCartQuantity)
 	cart.Delete("/:id", cartController.RemoveFromCart)
 	cart.Delete("/", cartController.ClearCart)
 
-	// ---------------- WISHLIST (Protected) ----------------
-	wishlist := app.Group("/wishlist", middleware.AuthMiddleware(jwtManager, redisCache))
+	// ================= WISHLIST ROUTES =================
+	wishlist := app.Group(
+		"/wishlist",
+		middleware.AuthMiddleware(jwtManager, redisCache),
+	)
+
 	wishlist.Post("/", wishlistController.AddToWishlist)
 	wishlist.Get("/", wishlistController.GetWishlist)
 	wishlist.Delete("/:id", wishlistController.RemoveFromWishlist)
+
+	// ================= IMAGE UPLOAD =================
+	app.Post("/upload", uploadController.UploadImage)
 }

@@ -69,7 +69,7 @@ func (cc *CartController) UpdateCartQuantity(c *fiber.Ctx) error {
 	}
 
 	itemID := c.Params("id") // the ID of the cart item
-	
+
 	var req dto.UpdateCartQuantityRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})

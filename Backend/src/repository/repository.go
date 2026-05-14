@@ -6,8 +6,8 @@ type Repository struct {
 	DB *gorm.DB
 }
 
-func SetUpRepo(db *gorm.DB) *Repository{
-	return &Repository{DB:db}
+func SetUpRepo(db *gorm.DB) *Repository {
+	return &Repository{DB: db}
 }
 
 func (r *Repository) Insert(req interface{}) (interface{}, error) {

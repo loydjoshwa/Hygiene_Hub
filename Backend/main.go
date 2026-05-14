@@ -9,6 +9,7 @@ import (
 	"hygienehub/src/database"
 	"hygienehub/src/repository"
 	"hygienehub/src/services"
+	"hygienehub/utils/cloudinary"
 	"hygienehub/utils/email"
 	"hygienehub/utils/jwt"
 	"hygienehub/utils/logger"
@@ -24,6 +25,13 @@ func main() {
 	logger.InitLogger()
 
 	validation.InitValidation()
+
+	err := cloudinary.ConnectCloudinary()
+	if err != nil {
+		logger.Log.Warn("Failed to connect to Cloudinary: ", err)
+	} else {
+		logger.Log.Info("Successfully connected to Cloudinary")
+	}
 
 	db := database.SetupDatabase(cfg)
 
@@ -42,11 +50,14 @@ func main() {
 	productService := services.NewProductService(repo)
 	cartService := services.NewCartService(cartRepo)
 	wishlistService := services.NewWishlistService(repo)
+	userService := services.NewUserService(repo, redis)
 
 	authController := controllers.NewAuthController(authService)
 	productController := controllers.NewProductController(productService)
 	cartController := controllers.NewCartController(cartService)
 	wishlistController := controllers.NewWishlistController(wishlistService)
+	uploadController := controllers.NewUploadController()
+	userController := controllers.NewUserController(userService)
 
 	app := fiber.New()
 
@@ -56,6 +67,8 @@ func main() {
 		productController,
 		cartController,
 		wishlistController,
+		uploadController,
+		userController,
 		jwtManager,
 		redis,
 	)

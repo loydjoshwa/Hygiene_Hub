@@ -57,6 +57,16 @@ func AuthMiddleware(jwtManager *jwt.Manager, redisCache *cache.Redis) fiber.Hand
 				JSON(fiber.Map{"error": "Invalid token claims"})
 		}
 
+		// Check if user is globally blocked
+		err = redisCache.Client.Get(cache.Ctx, "blacklist:user:"+userID).Err()
+		if err == nil {
+			return c.Status(constant.FORBIDDEN).
+				JSON(fiber.Map{"error": "Your account has been blocked"})
+		} else if err != redis.Nil {
+			return c.Status(constant.INTERNALSERVERERROR).
+				JSON(fiber.Map{"error": "Failed to verify user status"})
+		}
+
 		role, _ := claims["role"].(string)
 
 		// Set values in context (Fiber style)

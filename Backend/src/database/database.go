@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
-	"sync"
 	"hygienehub/src/models"
+	"sync"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,12 +11,12 @@ import (
 
 var pgOnce sync.Once
 
-func SetupDatabase(cfg *models.Config) (*gorm.DB) {
+func SetupDatabase(cfg *models.Config) *gorm.DB {
 	var pgDB *gorm.DB
-	pgOnce.Do(func()  {
-		
+	pgOnce.Do(func() {
+
 		dsn := fmt.Sprintf(
-            
+
 			"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
 			cfg.DB.Host,
 			cfg.DB.User,
@@ -24,18 +24,18 @@ func SetupDatabase(cfg *models.Config) (*gorm.DB) {
 			cfg.DB.Name,
 			cfg.DB.Port,
 			cfg.DB.SSLMode,
-			cfg.DB.TimeZone, 
+			cfg.DB.TimeZone,
 		)
 
 		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
-	panic("failed to connect database: " + err.Error())
-}
+			panic("failed to connect database: " + err.Error())
+		}
 
 		sqlDB, err := db.DB()
 		if err != nil {
-	panic("failed to connect database: " + err.Error())
-}
+			panic("failed to connect database: " + err.Error())
+		}
 
 		sqlDB.SetMaxIdleConns(2)
 		sqlDB.SetMaxOpenConns(10)

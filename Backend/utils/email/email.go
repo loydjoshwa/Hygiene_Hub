@@ -2,8 +2,8 @@ package email
 
 import (
 	"fmt"
-	"net/smtp"
 	"hygienehub/src/models"
+	"net/smtp"
 )
 
 type Service struct {

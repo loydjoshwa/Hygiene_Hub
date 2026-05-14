@@ -30,7 +30,7 @@ func NewCartRepository(db *gorm.DB) CartRepository {
 // GetOrCreateCart finds the user's cart. If it doesn't exist, it creates one.
 func (r *cartRepository) GetOrCreateCart(userID string) (*models.Cart, error) {
 	var cart models.Cart
-	
+
 	// Try to find the cart first
 	err := r.db.Where("user_id = ?", userID).First(&cart).Error
 	if err != nil {
@@ -44,7 +44,7 @@ func (r *cartRepository) GetOrCreateCart(userID string) (*models.Cart, error) {
 		}
 		return nil, err
 	}
-	
+
 	return &cart, nil
 }
 
