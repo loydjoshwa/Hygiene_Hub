@@ -16,36 +16,62 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	// Load .env file
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Println(".env file not found")
+	}
+
+	// Load config
 	cfg := config.LoadConfig()
 
+	// Initialize logger
 	logger.InitLogger()
 
+	// Initialize validator
 	validation.InitValidation()
 
-
+	// Database setup
 	db := database.SetupDatabase(cfg)
 
+	// Run migrations
 	migration.Migrate(db)
 
+	// Repositories
 	repo := repository.SetUpRepo(db)
 	cartRepo := repository.NewCartRepository(db)
 
+	// Redis
 	redis := cache.NewRedis(cfg)
 
+	// JWT
 	jwtManager := jwt.NewJWTManager(cfg)
 
+	// Email service
 	emailService := email.NewEmailService(cfg)
 
-	authService := services.NewAuthService(repo, jwtManager, emailService, redis, cfg)
+	// Services
+	authService := services.NewAuthService(
+		repo,
+		jwtManager,
+		emailService,
+		redis,
+		cfg,
+	)
+
 	productService := services.NewProductService(repo)
 	cartService := services.NewCartService(cartRepo)
 	wishlistService := services.NewWishlistService(repo)
 	userService := services.NewUserService(repo, redis)
 	adminService := services.NewAdminService(repo, redis)
 
+	// Controllers
 	authController := controllers.NewAuthController(authService)
 	productController := controllers.NewProductController(productService)
 	cartController := controllers.NewCartController(cartService)
@@ -54,8 +80,10 @@ func main() {
 	userController := controllers.NewUserController(userService)
 	adminController := controllers.NewAdminController(adminService)
 
+	// Fiber app
 	app := fiber.New()
 
+	// Setup routes
 	routes.SetUpRoutes(
 		app,
 		authController,
@@ -69,9 +97,10 @@ func main() {
 		redis,
 	)
 
-	logger.Log.Info("Server running on port", cfg.Server.Port)
+	logger.Log.Info("Server running on port ", cfg.Server.Port)
 
+	// Start server
 	if err := app.Listen(":" + cfg.Server.Port); err != nil {
-		log.Fatal("server failed to start:", err)
+		log.Fatal("Server failed to start:", err)
 	}
 }

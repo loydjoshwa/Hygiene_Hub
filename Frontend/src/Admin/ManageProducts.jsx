@@ -32,36 +32,40 @@ const ManageProducts = () => {
   const validationSchema = Yup.object({
     name: Yup.string().required("Product name is required"),
     price: Yup.number().required("Price required").positive(),
-    rating: Yup.number().required(),
     description: Yup.string().required("Description required"),
-    image: Yup.string().required("image is required"), 
+    image: Yup.mixed().required("Image is required"),
   });
 
   const formik = useFormik({
     initialValues: {
       name: "",
       price: "",
-      rating: "4.5",
       description: "",
-      image: "",
+      image: null,
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
-        const product = {
-          ...values,
-          price: Number(values.price),
-          rating: Number(values.rating),
-        };
+        const formData = new FormData();
+        formData.append("title", values.name);
+        formData.append("name", values.name);
+        formData.append("category", "General");
+        formData.append("description", values.description);
+        formData.append("price", Number(values.price));
+        formData.append("stock", 100);
+
+        if (values.image instanceof File) {
+          formData.append("main_image", values.image);
+        }
 
         if (editingProduct) {
           await axiosInstance.put(
-            `/products/${editingProduct.id}`,
-            product
+            `/admin/products/${editingProduct.id}`,
+            formData
           );
           toast.success("Product updated!");
         } else {
-          await axiosInstance.post("/products", product);
+          await axiosInstance.post("/admin/products", formData);
           toast.success("Product added!");
         }
 
@@ -81,9 +85,8 @@ const ManageProducts = () => {
     formik.setValues({
       name: product.name,
       price: product.price,
-      rating: product.rating,
       description: product.description,
-      image: product.image,
+      image: product.image || product.main_image || null,
     });
 
     setShowModal(true);
@@ -93,7 +96,7 @@ const ManageProducts = () => {
     if (!window.confirm("Delete?")) return;
 
     try {
-      await axiosInstance.delete(`/products/${id}`);
+      await axiosInstance.delete(`/admin/products/${id}`);
       setProducts(products.filter((p) => p.id !== id));
       toast.success("Product deleted!");
     } catch (error) {
@@ -106,13 +109,6 @@ const ManageProducts = () => {
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const renderStars = (rating) =>
-    [...Array(5)].map((_, i) => (
-      <span key={i} className={`text-xl ${i < Math.floor(rating) ? "text-yellow-400" : "text-gray-300"}`}>
-        ★
-      </span>
-    ));
 
   return (
     <>
@@ -153,7 +149,6 @@ const ManageProducts = () => {
                   <th className="px-6 py-4">Image</th>
                   <th className="px-6 py-4">Details</th>
                   <th className="px-6 py-4">Price</th>
-                  <th className="px-6 py-4">Rating</th>
                   <th className="px-6 py-4">Actions</th>
                 </tr>
               </thead>
@@ -169,7 +164,6 @@ const ManageProducts = () => {
                     </td>
 
                     <td className="px-6 py-4 font-bold text-lg">₹{p.price}</td>
-                    <td className="px-6 py-4">{renderStars(p.rating)}</td>
 
                     <td className="px-6 py-4 flex gap-3">
                       <button
@@ -255,39 +249,30 @@ const ManageProducts = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-1 font-medium">Rating *</label>
-                  <select
-                    name="rating"
-                    className="w-full px-4 py-3 border rounded-xl"
-                    value={formik.values.rating}
-                    onChange={formik.handleChange}
-                  >
-                    {[4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5].map((r) => (
-                      <option key={r} value={r}>
-                        {r} Stars
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-medium">Image URL </label>
+                  <label className="block mb-1 font-medium">Image URL / Upload</label>
                   <input
+                    type="file"
                     name="image"
-                    placeholder="Enter image URL"
+                    accept="image/*"
                     className="w-full px-4 py-3 border rounded-xl"
-                    value={formik.values.image}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
+                    onChange={(e) => {
+                      formik.setFieldValue("image", e.currentTarget.files[0]);
+                    }}
                   />
                   {formik.touched.image && formik.errors.image && (
                       <p className="text-red-500 text-sm">{formik.errors.image}</p>
                   )}
-                  {formik.values.image &&  (
+                  {formik.values.image && typeof formik.values.image === 'string' && (
                     <img
                       src={formik.values.image}
                       className="mt-3 h-32 w-full object-cover rounded-lg border"
                       
+                    />
+                  )}
+                  {formik.values.image instanceof File && (
+                    <img
+                      src={URL.createObjectURL(formik.values.image)}
+                      className="mt-3 h-32 w-full object-cover rounded-lg border"
                     />
                   )}
                 </div>

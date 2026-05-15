@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"log"
+
 	"hygienehub/src/dto"
 	"hygienehub/src/models"
 	"hygienehub/src/repository"
@@ -13,11 +15,18 @@ type ProductService struct {
 }
 
 func NewProductService(repo repository.PgSQLRepository) *ProductService {
-	return &ProductService{repo: repo}
+	return &ProductService{
+		repo: repo,
+	}
 }
 
-// CreateProduct creates a new product in the database
-func (s *ProductService) CreateProduct(req *dto.CreateProductInput) (*models.Product, error) {
+// Create Product
+func (s *ProductService) CreateProduct(
+	req *dto.CreateProductInput,
+) (*models.Product, error) {
+
+	log.Println("CreateProduct function called")
+
 	product := &models.Product{
 		Title:       req.Title,
 		Name:        req.Name,
@@ -27,33 +36,53 @@ func (s *ProductService) CreateProduct(req *dto.CreateProductInput) (*models.Pro
 		Stock:       req.Stock,
 	}
 
+	// Set stock status
 	if req.InStock != nil {
 		product.InStock = *req.InStock
 	} else {
-		product.InStock = true // Default value
+		product.InStock = true
 	}
 
+	// Upload image
 	if req.MainImage != nil {
+
+		log.Println("Inside upload block")
+
 		file, err := req.MainImage.Open()
+
 		if err != nil {
+			log.Println("File open error:", err)
 			return nil, errors.New("failed to open image file")
 		}
+
 		defer file.Close()
 
-		uploadResult, err := cloudinary.UploadImageFile(file, req.MainImage.Filename)
+		uploadResult, err := cloudinary.UploadImageFile(
+			file,
+			req.MainImage.Filename,
+		)
+
 		if err != nil {
-			return nil, errors.New("failed to upload image to cloudinary")
+			log.Println("Cloudinary upload error:", err)
+			return nil, err
 		}
+
+		log.Println("Upload Success:", uploadResult.URL)
+
 		product.MainImage = uploadResult.URL
 		product.MainImagePublicID = uploadResult.PublicID
 	}
 
+	// Save product
 	result, err := s.repo.Insert(product)
+
 	if err != nil {
+		log.Println("Database insert error:", err)
 		return nil, err
 	}
 
 	createdProduct, ok := result.(*models.Product)
+
 	if !ok {
 		return nil, errors.New("failed to cast created product")
 	}
@@ -61,16 +90,41 @@ func (s *ProductService) CreateProduct(req *dto.CreateProductInput) (*models.Pro
 	return createdProduct, nil
 }
 
-// GetAllProducts retrieves all products
-func (s *ProductService) GetAllProducts() ([]*models.Product, error) {
+// Get All Products + Search
+func (s *ProductService) GetAllProducts(
+	search string,
+) ([]*models.Product, error) {
+
 	var products []*models.Product
+
+	// Search products
+	if search != "" {
+
+		err := s.repo.GetDB().
+			Where(
+				"name ILIKE ? OR title ILIKE ? OR category ILIKE ?",
+				"%"+search+"%",
+				"%"+search+"%",
+				"%"+search+"%",
+			).
+			Find(&products).Error
+
+		if err != nil {
+			return nil, err
+		}
+
+		return products, nil
+	}
+
+	// Get all products
 	result, err := s.repo.FindAll(&products)
+
 	if err != nil {
 		return nil, err
 	}
 
-	// Assuming FindAll returns the pointer to the slice
 	foundProducts, ok := result.(*[]*models.Product)
+
 	if !ok {
 		return nil, errors.New("failed to cast products array")
 	}
@@ -78,15 +132,21 @@ func (s *ProductService) GetAllProducts() ([]*models.Product, error) {
 	return *foundProducts, nil
 }
 
-// GetProductByID retrieves a product by its ID
-func (s *ProductService) GetProductByID(id string) (*models.Product, error) {
+// Get Product By ID
+func (s *ProductService) GetProductByID(
+	id string,
+) (*models.Product, error) {
+
 	var product models.Product
+
 	result, err := s.repo.FindByID(&product, id)
+
 	if err != nil {
 		return nil, err
 	}
 
 	foundProduct, ok := result.(*models.Product)
+
 	if !ok {
 		return nil, errors.New("product not found")
 	}
@@ -94,52 +154,65 @@ func (s *ProductService) GetProductByID(id string) (*models.Product, error) {
 	return foundProduct, nil
 }
 
-// UpdateProduct updates an existing product
-func (s *ProductService) UpdateProduct(id string, req *dto.UpdateProductInput) (*models.Product, error) {
-	// First, check if product exists
+// Update Product
+func (s *ProductService) UpdateProduct(
+	id string,
+	req *dto.UpdateProductInput,
+) (*models.Product, error) {
+
 	product, err := s.GetProductByID(id)
+
 	if err != nil {
 		return nil, err
 	}
 
-	// Prepare fields to update
 	fieldsToUpdate := make(map[string]interface{})
+
 	if req.Title != nil {
 		fieldsToUpdate["title"] = *req.Title
 	}
+
 	if req.Name != nil {
 		fieldsToUpdate["name"] = *req.Name
 	}
+
 	if req.Category != nil {
 		fieldsToUpdate["category"] = *req.Category
 	}
+
 	if req.Description != nil {
 		fieldsToUpdate["description"] = *req.Description
 	}
+
 	if req.Price != nil {
 		fieldsToUpdate["price"] = *req.Price
 	}
+
 	if req.Stock != nil {
 		fieldsToUpdate["stock"] = *req.Stock
 	}
+
 	if req.InStock != nil {
 		fieldsToUpdate["in_stock"] = *req.InStock
 	}
 
-	// Update the database
-	err = s.repo.UpdateByFields(product, id, fieldsToUpdate)
+	err = s.repo.UpdateByFields(
+		product,
+		id,
+		fieldsToUpdate,
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	// Fetch updated product to return
 	return s.GetProductByID(id)
 }
 
-// DeleteProduct deletes a product by ID
+// Delete Product
 func (s *ProductService) DeleteProduct(id string) error {
+
 	var product models.Product
-	// Using the ID, the Delete method typically requires the model pointer and ID
-	err := s.repo.Delete(&product, id)
-	return err
+
+	return s.repo.Delete(&product, id)
 }

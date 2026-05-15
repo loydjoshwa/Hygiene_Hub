@@ -5,6 +5,7 @@ import (
 	"hygienehub/src/services"
 	"hygienehub/utils/constant"
 	"hygienehub/utils/logger"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,62 +15,123 @@ type ProductController struct {
 }
 
 func NewProductController(service *services.ProductService) *ProductController {
-	return &ProductController{productService: service}
+	return &ProductController{
+		productService: service,
+	}
 }
 
-// Create a new product
+// Create Product
 func (p *ProductController) Create(c *fiber.Ctx) error {
+
 	var req dto.CreateProductInput
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err // error response is handled inside parseAndValidate
-	}
+	// Get form values
+	req.Title = c.FormValue("title")
+	req.Name = c.FormValue("name")
+	req.Category = c.FormValue("category")
+	req.Description = c.FormValue("description")
 
-	// Manually handle the file upload
-	file, err := c.FormFile("main_image")
-	if err == nil {
-		req.MainImage = file
-	}
+	// Convert price
+	price, err := strconv.ParseInt(
+		c.FormValue("price"),
+		10,
+		64,
+	)
 
-	product, err := p.productService.CreateProduct(&req)
 	if err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(fiber.Map{
+				"error": "Invalid price",
+			})
+	}
+
+	// Convert stock
+	stock, err := strconv.Atoi(c.FormValue("stock"))
+
+	if err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(fiber.Map{
+				"error": "Invalid stock",
+			})
+	}
+
+	req.Price = price
+	req.Stock = stock
+
+	// Get image
+	file, err := c.FormFile("main_image")
+
+	if err != nil {
+		return c.Status(constant.BADREQUEST).
+			JSON(fiber.Map{
+				"error": "main_image is required",
+			})
+	}
+
+	req.MainImage = file
+
+	// Create product
+	product, err := p.productService.CreateProduct(&req)
+
+	if err != nil {
+
 		logger.Log.Error("Create Product failed:", err)
+
 		return c.Status(constant.INTERNALSERVERERROR).
-			JSON(fiber.Map{"error": "Failed to create product"})
+			JSON(fiber.Map{
+				"error": err.Error(),
+			})
 	}
 
 	return c.Status(constant.CREATED).JSON(product)
 }
 
-// GetAll retrieves all products
+// Get All Products + Search
 func (p *ProductController) GetAll(c *fiber.Ctx) error {
-	products, err := p.productService.GetAllProducts()
+
+	// Get search query
+	search := c.Query("search")
+
+	products, err := p.productService.GetAllProducts(search)
+
 	if err != nil {
+
 		logger.Log.Error("Get All Products failed:", err)
+
 		return c.Status(constant.INTERNALSERVERERROR).
-			JSON(fiber.Map{"error": "Failed to retrieve products"})
+			JSON(fiber.Map{
+				"error": "Failed to retrieve products",
+			})
 	}
 
 	return c.JSON(products)
 }
 
-// GetByID retrieves a single product
+// Get Product By ID
 func (p *ProductController) GetByID(c *fiber.Ctx) error {
+
 	id := c.Params("id")
 
 	product, err := p.productService.GetProductByID(id)
+
 	if err != nil {
+
 		logger.Log.Warn("Product not found:", err)
+
 		return c.Status(constant.NOTFOUND).
-			JSON(fiber.Map{"error": "Product not found"})
+			JSON(fiber.Map{
+				"error": "Product not found",
+			})
 	}
 
 	return c.JSON(product)
 }
 
-// Update modifies an existing product
+// Update Product
 func (p *ProductController) Update(c *fiber.Ctx) error {
+
 	id := c.Params("id")
+
 	var req dto.UpdateProductInput
 
 	if err := parseAndValidate(c, &req); err != nil {
@@ -77,24 +139,35 @@ func (p *ProductController) Update(c *fiber.Ctx) error {
 	}
 
 	product, err := p.productService.UpdateProduct(id, &req)
+
 	if err != nil {
+
 		logger.Log.Error("Update Product failed:", err)
+
 		return c.Status(constant.INTERNALSERVERERROR).
-			JSON(fiber.Map{"error": "Failed to update product"})
+			JSON(fiber.Map{
+				"error": "Failed to update product",
+			})
 	}
 
 	return c.JSON(product)
 }
 
-// Delete removes a product
+// Delete Product
 func (p *ProductController) Delete(c *fiber.Ctx) error {
+
 	id := c.Params("id")
 
 	err := p.productService.DeleteProduct(id)
+
 	if err != nil {
+
 		logger.Log.Error("Delete Product failed:", err)
+
 		return c.Status(constant.INTERNALSERVERERROR).
-			JSON(fiber.Map{"error": "Failed to delete product"})
+			JSON(fiber.Map{
+				"error": "Failed to delete product",
+			})
 	}
 
 	return c.JSON(fiber.Map{
