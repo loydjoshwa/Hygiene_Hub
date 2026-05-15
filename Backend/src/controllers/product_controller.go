@@ -19,10 +19,16 @@ func NewProductController(service *services.ProductService) *ProductController {
 
 // Create a new product
 func (p *ProductController) Create(c *fiber.Ctx) error {
-	var req dto.CreateProductRequest
+	var req dto.CreateProductInput
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err // error response is handled inside parseAndValidate
+	}
+
+	// Manually handle the file upload
+	file, err := c.FormFile("main_image")
+	if err == nil {
+		req.MainImage = file
 	}
 
 	product, err := p.productService.CreateProduct(&req)
@@ -64,7 +70,7 @@ func (p *ProductController) GetByID(c *fiber.Ctx) error {
 // Update modifies an existing product
 func (p *ProductController) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var req dto.UpdateProductRequest
+	var req dto.UpdateProductInput
 
 	if err := parseAndValidate(c, &req); err != nil {
 		return err

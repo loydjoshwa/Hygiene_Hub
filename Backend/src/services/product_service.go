@@ -5,6 +5,7 @@ import (
 	"hygienehub/src/dto"
 	"hygienehub/src/models"
 	"hygienehub/src/repository"
+	"hygienehub/utils/cloudinary"
 )
 
 type ProductService struct {
@@ -16,13 +17,35 @@ func NewProductService(repo repository.PgSQLRepository) *ProductService {
 }
 
 // CreateProduct creates a new product in the database
-func (s *ProductService) CreateProduct(req *dto.CreateProductRequest) (*models.Product, error) {
+func (s *ProductService) CreateProduct(req *dto.CreateProductInput) (*models.Product, error) {
 	product := &models.Product{
+		Title:       req.Title,
 		Name:        req.Name,
+		Category:    req.Category,
 		Description: req.Description,
 		Price:       req.Price,
-		Rating:      req.Rating,
-		Image:       req.Image,
+		Stock:       req.Stock,
+	}
+
+	if req.InStock != nil {
+		product.InStock = *req.InStock
+	} else {
+		product.InStock = true // Default value
+	}
+
+	if req.MainImage != nil {
+		file, err := req.MainImage.Open()
+		if err != nil {
+			return nil, errors.New("failed to open image file")
+		}
+		defer file.Close()
+
+		uploadResult, err := cloudinary.UploadImageFile(file, req.MainImage.Filename)
+		if err != nil {
+			return nil, errors.New("failed to upload image to cloudinary")
+		}
+		product.MainImage = uploadResult.URL
+		product.MainImagePublicID = uploadResult.PublicID
 	}
 
 	result, err := s.repo.Insert(product)
@@ -72,7 +95,7 @@ func (s *ProductService) GetProductByID(id string) (*models.Product, error) {
 }
 
 // UpdateProduct updates an existing product
-func (s *ProductService) UpdateProduct(id string, req *dto.UpdateProductRequest) (*models.Product, error) {
+func (s *ProductService) UpdateProduct(id string, req *dto.UpdateProductInput) (*models.Product, error) {
 	// First, check if product exists
 	product, err := s.GetProductByID(id)
 	if err != nil {
@@ -81,20 +104,26 @@ func (s *ProductService) UpdateProduct(id string, req *dto.UpdateProductRequest)
 
 	// Prepare fields to update
 	fieldsToUpdate := make(map[string]interface{})
-	if req.Name != "" {
-		fieldsToUpdate["name"] = req.Name
+	if req.Title != nil {
+		fieldsToUpdate["title"] = *req.Title
 	}
-	if req.Description != "" {
-		fieldsToUpdate["description"] = req.Description
+	if req.Name != nil {
+		fieldsToUpdate["name"] = *req.Name
 	}
-	if req.Price > 0 {
-		fieldsToUpdate["price"] = req.Price
+	if req.Category != nil {
+		fieldsToUpdate["category"] = *req.Category
 	}
-	if req.Rating >= 0 {
-		fieldsToUpdate["rating"] = req.Rating
+	if req.Description != nil {
+		fieldsToUpdate["description"] = *req.Description
 	}
-	if req.Image != "" {
-		fieldsToUpdate["image"] = req.Image
+	if req.Price != nil {
+		fieldsToUpdate["price"] = *req.Price
+	}
+	if req.Stock != nil {
+		fieldsToUpdate["stock"] = *req.Stock
+	}
+	if req.InStock != nil {
+		fieldsToUpdate["in_stock"] = *req.InStock
 	}
 
 	// Update the database

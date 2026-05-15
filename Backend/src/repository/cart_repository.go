@@ -3,6 +3,7 @@ package repository
 import (
 	"hygienehub/src/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -36,7 +37,7 @@ func (r *cartRepository) GetOrCreateCart(userID string) (*models.Cart, error) {
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Cart doesn't exist, so create a new one for this user
-			cart = models.Cart{UserID: userID}
+			cart = models.Cart{UserID: uuid.MustParse(userID)}
 			if createErr := r.db.Create(&cart).Error; createErr != nil {
 				return nil, createErr
 			}
@@ -51,8 +52,8 @@ func (r *cartRepository) GetOrCreateCart(userID string) (*models.Cart, error) {
 // GetCartWithItems fetches the cart along with all its items and the associated products
 func (r *cartRepository) GetCartWithItems(userID string) (*models.Cart, error) {
 	var cart models.Cart
-	// Preload the nested associations: CartItems, and Product inside CartItems
-	err := r.db.Preload("CartItems").Preload("CartItems.Product").Where("user_id = ?", userID).First(&cart).Error
+	// Preload the nested associations: Items, and Product inside Items
+	err := r.db.Preload("Items").Preload("Items.Product").Where("user_id = ?", userID).First(&cart).Error
 	return &cart, err
 }
 

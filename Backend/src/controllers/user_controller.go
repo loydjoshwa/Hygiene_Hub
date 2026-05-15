@@ -30,34 +30,3 @@ func (u *UserController) GetAllUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
-// BlockUser blocks a user from logging in
-func (u *UserController) BlockUser(c *fiber.Ctx) error {
-	id := c.Params("id")
-
-	err := u.userService.BlockUser(id)
-	if err != nil {
-		logger.Log.Error("Block User failed:", err)
-		return c.Status(constant.BADREQUEST).
-			JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
-		"message": "User successfully blocked",
-	})
-}
-
-// UnblockUser unblocks a user
-func (u *UserController) UnblockUser(c *fiber.Ctx) error {
-	id := c.Params("id")
-
-	err := u.userService.UnblockUser(id)
-	if err != nil {
-		logger.Log.Error("Unblock User failed:", err)
-		return c.Status(constant.BADREQUEST).
-			JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.Status(constant.SUCCESS).JSON(fiber.Map{
-		"message": "User successfully unblocked",
-	})
-}

@@ -5,6 +5,8 @@ import (
 	"hygienehub/src/dto"
 	"hygienehub/src/models"
 	"hygienehub/src/repository"
+
+	"github.com/google/uuid"
 )
 
 type WishlistService struct {
@@ -15,16 +17,16 @@ func NewWishlistService(repo repository.PgSQLRepository) *WishlistService {
 	return &WishlistService{repo: repo}
 }
 
-func (s *WishlistService) AddToWishlist(userID string, req *dto.AddToWishlistRequest) (*models.WishlistItem, error) {
+func (s *WishlistService) AddToWishlist(userID string, req *dto.AddToWishlistRequest) (*models.Wishlist, error) {
 	db := s.repo.GetDB()
-	var existingItem models.WishlistItem
-	result := db.Where("user_id = ? AND product_id = ?", userID, req.ProductID).First(&existingItem)
+	var existingItem models.Wishlist
+	result := db.Where("user_id = ? AND product_id = ?", userID, req.ProductID.String()).First(&existingItem)
 	if result.Error == nil {
 		return nil, errors.New("product already in wishlist")
 	}
 
-	wishlistItem := &models.WishlistItem{
-		UserID:    userID,
+	wishlistItem := &models.Wishlist{
+		UserID:    uuid.MustParse(userID),
 		ProductID: req.ProductID,
 	}
 
@@ -33,7 +35,7 @@ func (s *WishlistService) AddToWishlist(userID string, req *dto.AddToWishlistReq
 		return nil, err
 	}
 
-	createdItem, ok := res.(*models.WishlistItem)
+	createdItem, ok := res.(*models.Wishlist)
 	if !ok {
 		return nil, errors.New("failed to cast created wishlist item")
 	}
@@ -43,8 +45,8 @@ func (s *WishlistService) AddToWishlist(userID string, req *dto.AddToWishlistReq
 	return createdItem, nil
 }
 
-func (s *WishlistService) GetWishlist(userID string) ([]models.WishlistItem, error) {
-	var items []models.WishlistItem
+func (s *WishlistService) GetWishlist(userID string) ([]models.Wishlist, error) {
+	var items []models.Wishlist
 	db := s.repo.GetDB()
 	if err := db.Preload("Product").Where("user_id = ?", userID).Find(&items).Error; err != nil {
 		return nil, err
@@ -54,7 +56,7 @@ func (s *WishlistService) GetWishlist(userID string) ([]models.WishlistItem, err
 
 func (s *WishlistService) RemoveFromWishlist(id string, userID string) error {
 	db := s.repo.GetDB()
-	result := db.Where("id = ? AND user_id = ?", id, userID).Delete(&models.WishlistItem{})
+	result := db.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Wishlist{})
 	if result.Error != nil {
 		return result.Error
 	}

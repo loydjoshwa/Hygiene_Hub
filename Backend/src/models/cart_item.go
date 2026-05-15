@@ -1,14 +1,35 @@
 package models
 
-import "time"
+import (
+	"time"
 
-// CartItem represents an individual product inside a cart
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
 type CartItem struct {
-	ID        string    `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CartID    string    `gorm:"type:uuid;not null;index" json:"cart_id"`
-	ProductID string    `gorm:"type:uuid;not null" json:"product_id"`
-	Product   Product   `gorm:"foreignKey:ProductID" json:"product"` // Preload product details
-	Quantity  int       `gorm:"not null;default:1" json:"quantity"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+
+	// Relates to the Cart
+	CartID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_cart_product" json:"cart_id"`
+
+	// Belongs To relationship
+	Cart Cart `gorm:"foreignKey:CartID" json:"-"`
+
+	// Relates to the Product
+	ProductID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_cart_product" json:"product_id"`
+
+	// Belongs To relationship
+	Product Product `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+
+	// Quantity with database-level check constraint
+	Quantity int `gorm:"not null;default:1;check:quantity > 0" json:"quantity"`
+
+	// Captured price at the time of adding to cart
+	Price int64 `gorm:"not null" json:"price"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
+

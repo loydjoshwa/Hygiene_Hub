@@ -1,17 +1,24 @@
 package dto
 
-type CreateProductRequest struct {
-	Name        string  `json:"name" validate:"required"`
-	Description string  `json:"description" validate:"required"`
-	Price       float64 `json:"price" validate:"required,gt=0"`
-	Rating      float64 `json:"rating"`
-	Image       string  `json:"image" validate:"required"`
+import "mime/multipart"
+
+type CreateProductInput struct {
+	Title       string                `form:"title" validate:"required,min=2"`
+	Name        string                `form:"name" validate:"required,min=2,max=100"`
+	Category    string                `form:"category" validate:"required"`
+	Description string                `form:"description" validate:"required,min=5,max=100"`
+	Price       int64                 `form:"price" validate:"required,gt=0"`
+	Stock       int                   `form:"stock" validate:"required,gte=0"`
+	InStock     *bool                 `form:"in_stock"`
+	MainImage   *multipart.FileHeader `form:"main_image"`
 }
 
-type UpdateProductRequest struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price" validate:"omitempty,gt=0"`
-	Rating      float64 `json:"rating"`
-	Image       string  `json:"image"`
+type UpdateProductInput struct {
+	Title       *string `form:"title" validate:"omitempty,min=2"`
+	Name        *string `form:"name" validate:"omitempty,min=2"`
+	Category    *string `form:"category" validate:"omitempty"`
+	Description *string `form:"description" validate:"omitempty,min=5"`
+	Price       *int64  `form:"price" validate:"omitempty,gt=0"`
+	Stock       *int    `form:"stock" validate:"omitempty,gte=0"`
+	InStock     *bool   `form:"in_stock"`
 }

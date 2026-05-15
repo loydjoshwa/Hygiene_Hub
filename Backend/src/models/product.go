@@ -2,15 +2,31 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Product struct {
-	ID          string    `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	Name        string    `gorm:"type:varchar(255);not null" json:"name"`
-	Description string    `gorm:"type:text;not null" json:"description"`
-	Price       float64   `gorm:"type:numeric(10,2);not null" json:"price"`
-	Rating      float64   `gorm:"type:numeric(3,2);default:0" json:"rating"`
-	Image       string    `gorm:"type:text" json:"image"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"` // added default gen_random_uuid to prevent insert errors
+
+	Title       string `gorm:"not null" json:"title"`
+	Name        string `gorm:"not null" json:"name"`
+	Category    string `gorm:"not null" json:"category"`
+	Description string `gorm:"type:text" json:"description"`
+
+	Price int64 `gorm:"not null" json:"price"`
+
+	Rating float64 `gorm:"default:0" json:"rating"`
+
+	Stock   int  `gorm:"default:0" json:"stock"`
+	InStock bool `gorm:"default:true" json:"in_stock"`
+
+	MainImage         string `json:"main_image"`
+	MainImagePublicID string `json:"main_image_public_id"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }

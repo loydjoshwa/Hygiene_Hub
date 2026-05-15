@@ -6,6 +6,7 @@ import (
 	"hygienehub/src/models"
 	"hygienehub/src/repository"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -28,7 +29,7 @@ func (s *CartService) AddToCart(userID string, req *dto.AddToCartRequest) (*mode
 	}
 
 	// 2. Check if the product is already in the cart
-	existingItem, err := s.cartRepo.FindCartItem(cart.ID, req.ProductID)
+	existingItem, err := s.cartRepo.FindCartItem(cart.ID.String(), req.ProductID)
 	if err == nil {
 		// Product already in cart, just increase the quantity
 		existingItem.Quantity += req.Quantity
@@ -43,7 +44,7 @@ func (s *CartService) AddToCart(userID string, req *dto.AddToCartRequest) (*mode
 	// 3. Product is not in cart, create a new cart item
 	newItem := &models.CartItem{
 		CartID:    cart.ID,
-		ProductID: req.ProductID,
+		ProductID: uuid.MustParse(req.ProductID),
 		Quantity:  req.Quantity,
 	}
 
@@ -106,7 +107,7 @@ func (s *CartService) RemoveFromCart(userID string, itemID string) error {
 		return err
 	}
 
-	return s.cartRepo.RemoveCartItem(itemID, cart.ID)
+	return s.cartRepo.RemoveCartItem(itemID, cart.ID.String())
 }
 
 // ClearCart empties the user's cart completely
@@ -116,5 +117,5 @@ func (s *CartService) ClearCart(userID string) error {
 		return err
 	}
 
-	return s.cartRepo.ClearCart(cart.ID)
+	return s.cartRepo.ClearCart(cart.ID.String())
 }

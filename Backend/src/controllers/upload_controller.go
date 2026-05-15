@@ -35,8 +35,7 @@ func (u *UploadController) UploadImage(c *fiber.Ctx) error {
 	defer file.Close()
 
 	// Upload to Cloudinary
-	folderName := "hygienehub_products" // You can make this dynamic if needed
-	secureURL, err := cloudinary.UploadImage(file, fileHeader.Filename, folderName)
+	uploadResult, err := cloudinary.UploadImageFile(file, fileHeader.Filename)
 	if err != nil {
 		logger.Log.Error("Failed to upload image to Cloudinary:", err)
 		return c.Status(constant.INTERNALSERVERERROR).JSON(fiber.Map{
@@ -45,7 +44,8 @@ func (u *UploadController) UploadImage(c *fiber.Ctx) error {
 	}
 
 	return c.Status(constant.SUCCESS).JSON(fiber.Map{
-		"message": "Image uploaded successfully",
-		"url":     secureURL,
+		"message":   "Image uploaded successfully",
+		"url":       uploadResult.URL,
+		"public_id": uploadResult.PublicID,
 	})
 }

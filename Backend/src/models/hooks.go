@@ -20,3 +20,27 @@ func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
+
+// BeforeCreate hook for Cart model
+func (c *Cart) BeforeCreate(tx *gorm.DB) error {
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+	return nil
+}
+
+// BeforeCreate hook for CartItem model
+func (ci *CartItem) BeforeCreate(tx *gorm.DB) error {
+	if ci.ID == uuid.Nil {
+		ci.ID = uuid.New()
+	}
+	return nil
+}
+
+// BeforeCreate hook for Wishlist model
+func (w *Wishlist) BeforeCreate(tx *gorm.DB) error {
+	if w.ID == uuid.Nil {
+		w.ID = uuid.New()
+	}
+	return nil
+}
