@@ -89,47 +89,44 @@ func (s *ProductService) CreateProduct(
 
 	return createdProduct, nil
 }
-
-// Get All Products + Search
+// Get All Products + Search + Category Filter
 func (s *ProductService) GetAllProducts(
 	search string,
+	category string,
 ) ([]*models.Product, error) {
 
 	var products []*models.Product
 
-	// Search products
+	// Start query
+	query := s.repo.GetDB().Model(&models.Product{})
+
+	// Search filter
 	if search != "" {
 
-		err := s.repo.GetDB().
-			Where(
-				"name ILIKE ? OR title ILIKE ? OR category ILIKE ?",
-				"%"+search+"%",
-				"%"+search+"%",
-				"%"+search+"%",
-			).
-			Find(&products).Error
-
-		if err != nil {
-			return nil, err
-		}
-
-		return products, nil
+		query = query.Where(
+			"name ILIKE ? OR title ILIKE ?",
+			"%"+search+"%",
+			"%"+search+"%",
+		)
 	}
 
-	// Get all products
-	result, err := s.repo.FindAll(&products)
+	// Category filter
+	if category != "" {
+
+		query = query.Where(
+			"category ILIKE ?",
+			"%"+category+"%",
+		)
+	}
+
+	// Execute query
+	err := query.Find(&products).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	foundProducts, ok := result.(*[]*models.Product)
-
-	if !ok {
-		return nil, errors.New("failed to cast products array")
-	}
-
-	return *foundProducts, nil
+	return products, nil
 }
 
 // Get Product By ID

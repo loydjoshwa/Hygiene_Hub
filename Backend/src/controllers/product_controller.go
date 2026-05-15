@@ -86,13 +86,19 @@ func (p *ProductController) Create(c *fiber.Ctx) error {
 	return c.Status(constant.CREATED).JSON(product)
 }
 
-// Get All Products + Search
+// Get All Products + Search + Category Filter
 func (p *ProductController) GetAll(c *fiber.Ctx) error {
 
 	// Get search query
 	search := c.Query("search")
 
-	products, err := p.productService.GetAllProducts(search)
+	// Get category query
+	category := c.Query("category")
+
+	products, err := p.productService.GetAllProducts(
+		search,
+		category,
+	)
 
 	if err != nil {
 

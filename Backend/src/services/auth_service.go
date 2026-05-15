@@ -286,6 +286,16 @@ func (s *AuthService) Refresh(token string) (string, string, error) {
 		return "", "", errors.New("token expired")
 	}
 
+	// Check if user is blocked
+	var user models.User
+	_, err = s.repo.FindByID(&user, userID)
+	if err != nil {
+		return "", "", errors.New("user not found")
+	}
+	if user.IsBlocked {
+		return "", "", errors.New("user is blocked")
+	}
+
 	newAccess, err := s.jwtManager.GenerateAccessToken(userID, role, sessionID)
 	if err != nil {
 		return "", "", err

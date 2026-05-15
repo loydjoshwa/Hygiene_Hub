@@ -6,7 +6,6 @@ import (
 	"hygienehub/src/dto"
 	"hygienehub/src/models"
 	"hygienehub/src/repository"
-	"time"
 )
 
 type AdminService struct {
@@ -56,7 +55,8 @@ func (s *AdminService) UpdateUser(userID string, req *dto.UpdateUserRequest) (*m
 		updates["role"] = req.Role
 	}
 
-	err = s.repo.UpdateByFields(&models.User{}, userID, updates)
+	// Use user.ID (UUID) instead of userID (string) for consistency
+	err = s.repo.UpdateByFields(&models.User{}, user.ID, updates)
 	if err != nil {
 		return nil, err
 	}
@@ -87,17 +87,24 @@ func (s *AdminService) UpdateUserBlockStatus(userID string, req *dto.BlockUserRe
 		return errors.New("cannot block an admin")
 	}
 
+	isBlocked := *req.IsBlocked
+
 	updates := map[string]interface{}{
-		"is_blocked": req.IsBlocked,
+		"is_blocked": isBlocked,
 	}
-	err = s.repo.UpdateByFields(&models.User{}, userID, updates)
+	// Use user.ID (UUID) instead of userID (string) to ensure GORM matches the correct type
+	err = s.repo.UpdateByFields(&models.User{}, user.ID, updates)
 	if err != nil {
 		return err
 	}
 
-	if req.IsBlocked {
-		// Blacklist the user globally
-		return s.redis.Client.Set(cache.Ctx, "blacklist:user:"+userID, "blocked", 24*time.Hour).Err()
+	if isBlocked {
+		// Blacklist the user globally in Redis (permanent until unblocked)
+		if err := s.redis.Client.Set(cache.Ctx, "blacklist:user:"+userID, "blocked", 0).Err(); err != nil {
+			return err
+		}
+		// Revoke all active sessions - use user.ID (UUID) for consistency
+		return s.repo.DeleteWhere(&models.RefreshToken{}, "user_id = ?", user.ID)
 	} else {
 		// Remove from blacklist
 		return s.redis.Client.Del(cache.Ctx, "blacklist:user:"+userID).Err()

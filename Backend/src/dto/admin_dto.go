@@ -7,7 +7,7 @@ type UpdateUserRequest struct {
 }
 
 type BlockUserRequest struct {
-	IsBlocked bool `json:"is_blocked"` // true for block, false for unblock
+	IsBlocked *bool `json:"is_blocked" validate:"required"` // true for block, false for unblock
 }
 
 type DashboardStatsResponse struct {
