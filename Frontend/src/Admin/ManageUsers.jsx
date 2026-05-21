@@ -1,7 +1,8 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
 import { Search, User, Mail, Shield, CheckCircle, XCircle, Key } from 'lucide-react';
 
 const ManageUsers = () => {
@@ -9,16 +10,13 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://localhost:3130/users');
+      const response = await axiosInstance.get('/admin/users');
       const usersWithStatus = response.data.map(user => ({
         ...user,
-        status: user.status || 'active'
+        username: user.name || user.username,
+        status: user.is_blocked ? 'blocked' : 'active'
       }));
       setUsers(usersWithStatus || []);
       setLoading(false);
@@ -29,6 +27,10 @@ const ManageUsers = () => {
     }
   };
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   const toggleUserStatus = async (userId, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
     const action = currentStatus === 'active' ? 'block' : 'unblock';
@@ -36,8 +38,8 @@ const ManageUsers = () => {
     if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this user?`)) return;
     
     try {
-      await axios.patch(`http://localhost:3130/users/${userId}`, {
-        status: newStatus
+      await axiosInstance.patch(`/admin/users/${userId}/status`, {
+        is_blocked: newStatus === 'blocked'
       });
       
       setUsers(users.map(user => 

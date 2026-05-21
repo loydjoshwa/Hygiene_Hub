@@ -86,7 +86,7 @@ func (p *ProductController) Create(c *fiber.Ctx) error {
 	return c.Status(constant.CREATED).JSON(product)
 }
 
-// Get All Products + Search + Category Filter
+// Get All Products + Search + Category Filter + Pagination
 func (p *ProductController) GetAll(c *fiber.Ctx) error {
 
 	// Get search query
@@ -94,6 +94,42 @@ func (p *ProductController) GetAll(c *fiber.Ctx) error {
 
 	// Get category query
 	category := c.Query("category")
+
+	// Check if pagination query params are present
+	pageStr := c.Query("page")
+	limitStr := c.Query("limit")
+
+	if pageStr != "" || limitStr != "" {
+		page := 1
+		limit := 10
+
+		if pageStr != "" {
+			if pVal, err := strconv.Atoi(pageStr); err == nil && pVal > 0 {
+				page = pVal
+			}
+		}
+		if limitStr != "" {
+			if lVal, err := strconv.Atoi(limitStr); err == nil && lVal > 0 {
+				limit = lVal
+			}
+		}
+
+		res, err := p.productService.GetAllProductsPaginated(
+			search,
+			category,
+			page,
+			limit,
+		)
+
+		if err != nil {
+			logger.Log.Error("Get Paginated Products failed:", err)
+			return c.Status(constant.INTERNALSERVERERROR).
+				JSON(fiber.Map{
+					"error": "Failed to retrieve products",
+				})
+		}
+		return c.JSON(res)
+	}
 
 	products, err := p.productService.GetAllProducts(
 		search,
@@ -140,8 +176,8 @@ func (p *ProductController) Update(c *fiber.Ctx) error {
 
 	var req dto.UpdateProductInput
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	product, err := p.productService.UpdateProduct(id, &req)
@@ -167,13 +203,16 @@ func (p *ProductController) Delete(c *fiber.Ctx) error {
 	err := p.productService.DeleteProduct(id)
 
 	if err != nil {
-
 		logger.Log.Error("Delete Product failed:", err)
 
-		return c.Status(constant.INTERNALSERVERERROR).
-			JSON(fiber.Map{
-				"error": "Failed to delete product",
-			})
+		status := constant.INTERNALSERVERERROR
+		if err.Error() == "product not found or already deleted" {
+			status = constant.NOTFOUND
+		}
+
+		return c.Status(status).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
 	return c.JSON(fiber.Map{

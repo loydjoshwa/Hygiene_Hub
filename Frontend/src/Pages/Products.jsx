@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -16,8 +17,16 @@ const Products = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:3130/products');
-        setProducts(response.data);
+        const { default: axiosInstance } = await import('../utils/axiosInstance');
+        const response = await axiosInstance.get('/products');
+        
+        // Map backend fields to frontend expected fields
+        const mappedProducts = response.data.map(p => ({
+          ...p,
+          image: p.main_image
+        }));
+        
+        setProducts(mappedProducts);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching products:', error);

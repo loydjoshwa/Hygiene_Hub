@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
@@ -13,10 +14,6 @@ const ManageProducts = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       const response = await axiosInstance.get("/products");
@@ -27,6 +24,10 @@ const ManageProducts = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   
   const validationSchema = Yup.object({

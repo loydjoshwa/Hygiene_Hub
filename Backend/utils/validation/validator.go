@@ -2,7 +2,9 @@ package validation
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -29,11 +31,21 @@ var (
 			return fmt.Sprintf("%s must be exactly %s characters", e.Field(), e.Param())
 		},
 		"numeric": func(e validator.FieldError) string { return fmt.Sprintf("%s must contain only numbers", e.Field()) },
+		"min":     func(e validator.FieldError) string { return fmt.Sprintf("%s must be at least %s", e.Field(), e.Param()) },
 	}
 )
 
 // InitValidation initializes custom validations.
 func InitValidation() {
+	// Register function to use JSON tag names in validation errors
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
 	validate.RegisterValidation("name", validateName)
 	validate.RegisterValidation("password", validatePassword)
 }

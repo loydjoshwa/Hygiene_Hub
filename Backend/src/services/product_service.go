@@ -8,6 +8,9 @@ import (
 	"hygienehub/src/models"
 	"hygienehub/src/repository"
 	"hygienehub/utils/cloudinary"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type ProductService struct {
@@ -27,10 +30,27 @@ func (s *ProductService) CreateProduct(
 
 	log.Println("CreateProduct function called")
 
+	// Find or create category
+	var category models.Category
+	err := s.repo.GetDB().Where("LOWER(name) = LOWER(?)", req.Category).First(&category).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			category = models.Category{
+				ID:   uuid.New(),
+				Name: req.Category,
+			}
+			if createErr := s.repo.GetDB().Create(&category).Error; createErr != nil {
+				return nil, createErr
+			}
+		} else {
+			return nil, err
+		}
+	}
+
 	product := &models.Product{
 		Title:       req.Title,
 		Name:        req.Name,
-		Category:    req.Category,
+		CategoryID:  category.ID,
 		Description: req.Description,
 		Price:       req.Price,
 		Stock:       req.Stock,
@@ -87,8 +107,78 @@ func (s *ProductService) CreateProduct(
 		return nil, errors.New("failed to cast created product")
 	}
 
+	// Preload Category association for returned product
+	var loadedProduct models.Product
+	if err := s.repo.GetDB().Preload("Category").First(&loadedProduct, "id = ?", createdProduct.ID).Error; err == nil {
+		return &loadedProduct, nil
+	}
+
 	return createdProduct, nil
 }
+
+type PaginatedProductsResponse struct {
+	Products   []*models.Product `json:"products"`
+	Total      int64             `json:"total"`
+	Page       int               `json:"page"`
+	Limit      int               `json:"limit"`
+	TotalPages int               `json:"total_pages"`
+}
+
+// GetAllProductsPaginated returns paginated product list
+func (s *ProductService) GetAllProductsPaginated(
+	search string,
+	category string,
+	page int,
+	limit int,
+) (*PaginatedProductsResponse, error) {
+	var products []*models.Product
+	var total int64
+
+	// Base queries
+	query := s.repo.GetDB().Model(&models.Product{})
+	countQuery := s.repo.GetDB().Model(&models.Product{})
+
+	// Search filter
+	if search != "" {
+		filter := "products.name ILIKE ? OR products.title ILIKE ?"
+		query = query.Where(filter, "%"+search+"%", "%"+search+"%")
+		countQuery = countQuery.Where(filter, "%"+search+"%", "%"+search+"%")
+	}
+
+	// Category filter
+	if category != "" {
+		joinSQL := "JOIN categories ON categories.id = products.category_id"
+		filter := "categories.name ILIKE ?"
+		query = query.Joins(joinSQL).Where(filter, "%"+category+"%").Select("products.*")
+		countQuery = countQuery.Joins(joinSQL).Where(filter, "%"+category+"%")
+	}
+
+	// Count total matching items
+	if err := countQuery.Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	// Offset and limit
+	offset := (page - 1) * limit
+	err := query.Preload("Category").Offset(offset).Limit(limit).Find(&products).Error
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+	if totalPages < 0 {
+		totalPages = 0
+	}
+
+	return &PaginatedProductsResponse{
+		Products:   products,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
+}
+
 // Get All Products + Search + Category Filter
 func (s *ProductService) GetAllProducts(
 	search string,
@@ -98,13 +188,13 @@ func (s *ProductService) GetAllProducts(
 	var products []*models.Product
 
 	// Start query
-	query := s.repo.GetDB().Model(&models.Product{})
+	query := s.repo.GetDB().Model(&models.Product{}).Preload("Category")
 
 	// Search filter
 	if search != "" {
 
 		query = query.Where(
-			"name ILIKE ? OR title ILIKE ?",
+			"products.name ILIKE ? OR products.title ILIKE ?",
 			"%"+search+"%",
 			"%"+search+"%",
 		)
@@ -112,11 +202,9 @@ func (s *ProductService) GetAllProducts(
 
 	// Category filter
 	if category != "" {
-
-		query = query.Where(
-			"category ILIKE ?",
-			"%"+category+"%",
-		)
+		query = query.Joins("JOIN categories ON categories.id = products.category_id").
+			Where("categories.name ILIKE ?", "%"+category+"%").
+			Select("products.*")
 	}
 
 	// Execute query
@@ -136,19 +224,12 @@ func (s *ProductService) GetProductByID(
 
 	var product models.Product
 
-	result, err := s.repo.FindByID(&product, id)
-
+	err := s.repo.GetDB().Preload("Category").First(&product, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 
-	foundProduct, ok := result.(*models.Product)
-
-	if !ok {
-		return nil, errors.New("product not found")
-	}
-
-	return foundProduct, nil
+	return &product, nil
 }
 
 // Update Product
@@ -174,7 +255,22 @@ func (s *ProductService) UpdateProduct(
 	}
 
 	if req.Category != nil {
-		fieldsToUpdate["category"] = *req.Category
+		var category models.Category
+		err := s.repo.GetDB().Where("LOWER(name) = LOWER(?)", *req.Category).First(&category).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				category = models.Category{
+					ID:   uuid.New(),
+					Name: *req.Category,
+				}
+				if createErr := s.repo.GetDB().Create(&category).Error; createErr != nil {
+					return nil, createErr
+				}
+			} else {
+				return nil, err
+			}
+		}
+		fieldsToUpdate["category_id"] = category.ID
 	}
 
 	if req.Description != nil {
@@ -208,8 +304,12 @@ func (s *ProductService) UpdateProduct(
 
 // Delete Product
 func (s *ProductService) DeleteProduct(id string) error {
-
 	var product models.Product
+	// Check if product exists
+	_, err := s.repo.FindByID(&product, id)
+	if err != nil {
+		return errors.New("product not found")
+	}
 
 	return s.repo.Delete(&product, id)
 }

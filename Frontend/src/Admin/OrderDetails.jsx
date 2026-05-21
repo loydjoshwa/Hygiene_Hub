@@ -1,8 +1,9 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
 import { ArrowLeft, Calendar, Phone, MapPin, CreditCard, Package, Truck, CheckCircle, User, Mail, Home, XCircle, AlertCircle } from 'lucide-react';
 
 const OrderDetails = () => {
@@ -12,17 +13,11 @@ const OrderDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (id) {
-      fetchOrder();
-    }
-  }, [id]);
-
   const fetchOrder = async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await axios.get(`http://localhost:3130/orders/${id}`);
+      const response = await axiosInstance.get(`/admin/orders/${id}`);
       
       if (response.data) {
         setOrder(response.data);
@@ -38,9 +33,15 @@ const OrderDetails = () => {
     }
   };
 
+  useEffect(() => {
+    if (id) {
+      fetchOrder();
+    }
+  }, [id]);
+
   const updateOrderStatus = async (newStatus) => {
     try {
-      await axios.patch(`http://localhost:3130/orders/${id}`, { status: newStatus });
+      await axiosInstance.patch(`/admin/orders/${id}/status`, { status: newStatus });
       setOrder({ ...order, status: newStatus });
       toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {

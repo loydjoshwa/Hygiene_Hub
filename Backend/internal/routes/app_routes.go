@@ -21,6 +21,7 @@ func SetUpRoutes(
 	uploadController *controllers.UploadController,
 	userController *controllers.UserController,
 	adminController *controllers.AdminController,
+	orderController *controllers.OrderController,
 	jwtManager *jwt.Manager,
 	redisCache *cache.Redis,
 ) {
@@ -77,7 +78,15 @@ func SetUpRoutes(
 		{
 			wishlist.Get("/", wishlistController.GetWishlist)
 			wishlist.Post("/", wishlistController.AddToWishlist)
+			wishlist.Post("/:id/move-to-cart", wishlistController.MoveToCart)
 			wishlist.Delete("/:id", wishlistController.RemoveFromWishlist)
+		}
+
+		// Order routes
+		orders := user.Group("/orders")
+		{
+			orders.Post("/", orderController.CreateOrder)
+			orders.Get("/", orderController.GetUserOrders)
 		}
 	}
 
@@ -105,6 +114,11 @@ func SetUpRoutes(
 		admin.Get("/users", userController.GetAllUsers)
 		admin.Put("/users/:id", adminController.UpdateUser)
 		admin.Patch("/users/:id/status", adminController.UpdateUserBlockStatus)
+
+		// Admin order routes
+		admin.Get("/orders", orderController.GetAllOrders)
+		admin.Get("/orders/:id", orderController.GetOrderByID)
+		admin.Patch("/orders/:id/status", orderController.UpdateOrderStatus)
 	}
 
 	// ================= MISC ROUTES =================

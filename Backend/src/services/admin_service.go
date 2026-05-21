@@ -87,6 +87,9 @@ func (s *AdminService) UpdateUserBlockStatus(userID string, req *dto.BlockUserRe
 		return errors.New("cannot block an admin")
 	}
 
+	if req.IsBlocked == nil {
+		return errors.New("is_blocked status is required")
+	}
 	isBlocked := *req.IsBlocked
 
 	updates := map[string]interface{}{

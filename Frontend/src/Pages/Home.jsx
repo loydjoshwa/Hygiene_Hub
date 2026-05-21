@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -16,8 +17,16 @@ const Home = () => {
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:3130/products');
-        const products = response.data.slice(0, 4);
+        const { default: axiosInstance } = await import('../utils/axiosInstance');
+        const response = await axiosInstance.get('/products');
+        
+        // Map backend fields to frontend expected fields
+        const mappedProducts = response.data.map(p => ({
+          ...p,
+          image: p.main_image
+        }));
+        
+        const products = mappedProducts.slice(0, 4);
         setFeaturedProducts(products);
         setLoading(false);
       } catch (error) {

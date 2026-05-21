@@ -19,26 +19,29 @@ func NewAuthController(service *services.AuthService) *AuthController {
 }
 
 // 🔹 Helper: Parse + Validate
-func parseAndValidate(c *fiber.Ctx, req interface{}) error {
+func parseAndValidate(c *fiber.Ctx, req interface{}) bool {
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(constant.BADREQUEST).
+		logger.Log.Warnf("Body parsing failed: %v | Content-Type: %s", err, c.Get("Content-Type"))
+		c.Status(constant.BADREQUEST).
 			JSON(fiber.Map{"error": "Invalid request body"})
+		return false
 	}
 
 	if err := validation.ValidateStruct(req); err != nil {
-		return c.Status(constant.BADREQUEST).
+		c.Status(constant.BADREQUEST).
 			JSON(validation.FormatValidationErrors(err))
+		return false
 	}
 
-	return nil
+	return true
 }
 
 // 📝 Signup
 func (a *AuthController) Signup(c *fiber.Ctx) error {
 	var req dto.SignupRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	err := a.authService.Signup(req.Name, req.Email, req.Password)
@@ -57,8 +60,8 @@ func (a *AuthController) Signup(c *fiber.Ctx) error {
 func (a *AuthController) VerifyOTP(c *fiber.Ctx) error {
 	var req dto.VerifyOTPRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	if err := a.authService.VerifyOTP(req.Email, req.OTP); err != nil {
@@ -76,8 +79,8 @@ func (a *AuthController) VerifyOTP(c *fiber.Ctx) error {
 func (a *AuthController) ResendOTP(c *fiber.Ctx) error {
 	var req dto.ResendOTPRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	if err := a.authService.ResendOTP(req.Email); err != nil {
@@ -94,8 +97,8 @@ func (a *AuthController) ResendOTP(c *fiber.Ctx) error {
 func (a *AuthController) Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	access, refresh, user, err := a.authService.Login(req.Email, req.Password)
@@ -116,8 +119,8 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 func (a *AuthController) Refresh(c *fiber.Ctx) error {
 	var req dto.RefreshTokenRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	access, refresh, err := a.authService.Refresh(req.RefreshToken)
@@ -137,8 +140,8 @@ func (a *AuthController) Refresh(c *fiber.Ctx) error {
 func (a *AuthController) Logout(c *fiber.Ctx) error {
 	var req dto.LogoutRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	sessionID, ok := c.Locals("session_id").(string)
@@ -187,8 +190,8 @@ func (a *AuthController) Dashboard(c *fiber.Ctx) error {
 func (a *AuthController) ForgotPassword(c *fiber.Ctx) error {
 	var req dto.ForgotPasswordRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	if err := a.authService.ForgotPassword(req.Email); err != nil {
@@ -206,8 +209,8 @@ func (a *AuthController) ForgotPassword(c *fiber.Ctx) error {
 func (a *AuthController) ResetPassword(c *fiber.Ctx) error {
 	var req dto.ResetPasswordRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	if err := a.authService.ResetPassword(req.Email, req.OTP, req.NewPassword); err != nil {

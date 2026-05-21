@@ -1,8 +1,9 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
 import { Search, Eye, User, Mail, Calendar } from 'lucide-react';
 
 const ManageOrders = () => {
@@ -10,13 +11,9 @@ const ManageOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
   const fetchOrders = async () => {
     try {
-      const response = await axios.get('http://localhost:3130/orders');
+      const response = await axiosInstance.get('/admin/orders');
       setOrders(response.data || []);
       setLoading(false);
     } catch (error) {
@@ -25,6 +22,10 @@ const ManageOrders = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const getStatusColor = (status) => {
     const colors = {

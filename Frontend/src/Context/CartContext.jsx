@@ -1,5 +1,6 @@
+/* eslint-disable */
 import React, { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 
 const CartContext = createContext();
 const AuthContext = createContext();
@@ -39,14 +40,42 @@ export const CartProvider = ({ children }) => {
 
   async function fetchUserCartItems() {
     if (!currentUser) return;
-    const { data } = await axios.get("http://localhost:3130/cart");
-    setCartItems(data.filter((i) => i.userId === currentUser.id));
+    try {
+      const { data } = await axiosInstance.get("/user/cart");
+      const backendItems = data.items || [];
+      const mappedItems = backendItems.map((item) => ({
+        id: item.id, 
+        productId: item.product_id || item.product?.id,
+        name: item.product?.name || item.product?.title || "",
+        price: item.price,
+        image: item.product?.main_image || "",
+        description: item.product?.description || "",
+        quantity: item.quantity,
+        userId: item.user_id,
+      }));
+      setCartItems(mappedItems);
+    } catch (err) {
+      console.error("Error fetching cart:", err);
+    }
   }
 
   async function fetchUserWishlistItems() {
     if (!currentUser) return;
-    const { data } = await axios.get("http://localhost:3130/wishlist");
-    setWishlistItems(data.filter((i) => i.userId === currentUser.id));
+    try {
+      const { data } = await axiosInstance.get("/user/wishlist");
+      const mappedItems = (data || []).map((item) => ({
+        id: item.id,
+        productId: item.product_id || item.product?.id,
+        name: item.product?.name || item.product?.title || "",
+        price: item.product?.price || 0,
+        image: item.product?.main_image || "",
+        description: item.product?.description || "",
+        userId: item.user_id,
+      }));
+      setWishlistItems(mappedItems);
+    } catch (err) {
+      console.error("Error fetching wishlist:", err);
+    }
   }
 
   useEffect(() => {
@@ -60,60 +89,87 @@ export const CartProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  const login = (user) => {
-    localStorage.setItem("currentUser", JSON.stringify(user));
-    setCurrentUser(user);
+  const login = async (email, password) => {
+    try {
+      const res = await axiosInstance.post("/auth/login", { email, password });
+      const { access_token, refresh_token, role } = res.data;
+      
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
+      
+      const profileRes = await axiosInstance.get("/user/dashboard");
+      const profile = profileRes.data;
+      
+      const userObj = {
+        id: profile.id,
+        name: profile.name,
+        role: profile.role,
+        email: email
+      };
+      
+      localStorage.setItem("currentUser", JSON.stringify(userObj));
+      setCurrentUser(userObj);
+      return userObj;
+    } catch (error) {
+      const errMsg = error.response?.data?.error || error.message || "Login failed";
+      throw new Error(errMsg);
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem("currentUser");
-    setCurrentUser(null);
-    setCartItems([]);
-    setWishlistItems([]);
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (refreshToken) {
+        await axiosInstance.post("/auth/logout", { refresh_token: refreshToken });
+      }
+    } catch (err) {
+      console.warn("Logout error:", err);
+    } finally {
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      setCurrentUser(null);
+      setCartItems([]);
+      setWishlistItems([]);
+    }
   };
 
   const validateUser = async () => {
     const stored = localStorage.getItem("currentUser");
     if (!stored) return false;
-
-    const user = JSON.parse(stored);
-    const res = await axios.get(`http://localhost:3130/users/${user.id}`);
-
-    if (!res.data || res.data.status === "blocked") {
+    
+    try {
+      const res = await axiosInstance.get("/user/dashboard");
+      if (res.data.is_blocked) {
+        logout();
+        return false;
+      }
+      return true;
+    } catch (err) {
       logout();
       return false;
     }
-    return true;
   };
-
-
 
   const addToCart = async (product) => {
     if (!(await validateUser())) throw new Error("Session expired");
 
-    const existing = cartItems.find((i) => i.productId === product.id);
-    if (existing) {
-      await axios.patch(`http://localhost:3130/cart/${existing.id}`, {
-        quantity: existing.quantity + 1,
-      });
-    } else {
-      await axios.post("http://localhost:3130/cart", {
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        description: product.description,
+    try {
+      await axiosInstance.post("/user/cart", {
+        product_id: product.id,
         quantity: 1,
-        userId: currentUser.id,
       });
+      fetchUserCartItems();
+    } catch (error) {
+      const errMsg = error.response?.data?.error || error.message || "Failed to add to cart";
+      throw new Error(errMsg);
     }
-    fetchUserCartItems();
   };
 
   const removeFromCart = async (productId) => {
     const item = cartItems.find((i) => i.productId === productId);
     if (item) {
-      await axios.delete(`http://localhost:3130/cart/${item.id}`);
+      await axiosInstance.delete(`/user/cart/${item.id}`);
       fetchUserCartItems();
     }
   };
@@ -122,21 +178,36 @@ export const CartProvider = ({ children }) => {
     if (qty < 1) return removeFromCart(productId);
     const item = cartItems.find((i) => i.productId === productId);
     if (item) {
-      await axios.patch(`http://localhost:3130/cart/${item.id}`, {
-        quantity: qty,
-      });
-      fetchUserCartItems();
+      try {
+        await axiosInstance.put(`/user/cart/${item.id}`, { quantity: qty });
+        fetchUserCartItems();
+      } catch (error) {
+        const errMsg = error.response?.data?.error || error.message || "Failed to update quantity";
+        throw new Error(errMsg); // Or we could toast.error directly here, but throwing is consistent
+      }
     }
   };
 
-  const increaseQuantity = (productId) => {
+  const increaseQuantity = async (productId) => {
     const item = cartItems.find((i) => i.productId === productId);
-    if (item) updateQuantity(productId, item.quantity + 1);
+    if (item) {
+      try {
+        await updateQuantity(productId, item.quantity + 1);
+      } catch (err) {
+        throw err;
+      }
+    }
   };
 
-  const decreaseQuantity = (productId) => {
+  const decreaseQuantity = async (productId) => {
     const item = cartItems.find((i) => i.productId === productId);
-    if (item) updateQuantity(productId, item.quantity - 1);
+    if (item) {
+      try {
+        await updateQuantity(productId, item.quantity - 1);
+      } catch (err) {
+        throw err;
+      }
+    }
   };
 
   const getQuantity = (productId) => {
@@ -152,44 +223,34 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = async () => {
     if (!currentUser) return;
-    const { data } = await axios.get("http://localhost:3130/cart");
-    const items = data.filter((i) => i.userId === currentUser.id);
-    await Promise.all(
-      items.map((i) =>
-        axios.delete(`http://localhost:3130/cart/${i.id}`)
-      )
-    );
-    setCartItems([]);
+    try {
+      await axiosInstance.delete("/user/cart");
+      setCartItems([]);
+    } catch (err) {
+      console.error("Failed to clear cart", err);
+    }
   };
 
-
-
-  // ✅ FIXED FUNCTION
   const addToWishlist = async (product) => {
     if (!(await validateUser())) throw new Error("Session expired");
 
     const exists = wishlistItems.find((i) => i.productId === product.id);
-    if (exists) {
-      return false; // already in wishlist
+    if (exists) return false;
+
+    try {
+      await axiosInstance.post("/user/wishlist", { product_id: product.id });
+      fetchUserWishlistItems();
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
     }
-
-    await axios.post("http://localhost:3130/wishlist", {
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      description: product.description,
-      userId: currentUser.id,
-    });
-
-    fetchUserWishlistItems();
-    return true; // newly added
   };
 
   const removeFromWishlist = async (productId) => {
     const item = wishlistItems.find((i) => i.productId === productId);
     if (item) {
-      await axios.delete(`http://localhost:3130/wishlist/${item.id}`);
+      await axiosInstance.delete(`/user/wishlist/${item.id}`);
       fetchUserWishlistItems();
     }
   };
@@ -203,11 +264,7 @@ export const CartProvider = ({ children }) => {
     if (!(await validateUser())) {
       throw new Error("User blocked or logged out");
     }
-    const { data } = await axios.post("http://localhost:3130/orders", {
-      ...orderData,
-      orderDate: new Date().toISOString(),
-      status: "confirmed",
-    });
+    const { data } = await axiosInstance.post("/user/orders", orderData);
     return data;
   };
 

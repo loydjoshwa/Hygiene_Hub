@@ -66,7 +66,7 @@ func main() {
 	)
 
 	productService := services.NewProductService(repo)
-	cartService := services.NewCartService(cartRepo)
+	cartService := services.NewCartService(cartRepo, repo)
 	wishlistService := services.NewWishlistService(repo)
 	userService := services.NewUserService(repo, redis)
 	adminService := services.NewAdminService(repo, redis)
@@ -75,10 +75,11 @@ func main() {
 	authController := controllers.NewAuthController(authService)
 	productController := controllers.NewProductController(productService)
 	cartController := controllers.NewCartController(cartService)
-	wishlistController := controllers.NewWishlistController(wishlistService)
+	wishlistController := controllers.NewWishlistController(wishlistService, cartService)
 	uploadController := controllers.NewUploadController()
 	userController := controllers.NewUserController(userService)
 	adminController := controllers.NewAdminController(adminService)
+	orderController := controllers.NewOrderController(repo, db)
 
 	// Fiber app
 	app := fiber.New()
@@ -93,6 +94,7 @@ func main() {
 		uploadController,
 		userController,
 		adminController,
+		orderController,
 		jwtManager,
 		redis,
 	)

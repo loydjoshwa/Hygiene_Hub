@@ -43,7 +43,7 @@ func NewAuthService(
 		redis:        redis,
 		cfg:          cfg,
 	}
-}
+} 
 
 // Helper function to generate, email, and store OTP in Redis
 func (s *AuthService) handleOTPGeneration(emailStr string, isPasswordReset bool) error {
@@ -208,7 +208,7 @@ func (s *AuthService) Login(emailStr, passwordStr string) (string, string, *mode
 	}
 
 	if user.IsBlocked {
-		return "", "", nil, errors.New("user blocked")
+		return "", "", nil, errors.New("your account has been blocked")
 	}
 
 	if !password.ComparePassword(user.Password, passwordStr) {
@@ -347,7 +347,7 @@ func (s *AuthService) GetUserByID(userID string) (*models.User, error) {
 	return &user, nil
 }
 
-//forgot password
+// forgot password
 func (s *AuthService) ForgotPassword(emailStr string) error {
 	var user models.User
 	_, err := s.repo.FindOneWhere(&user, "email = ?", emailStr)
@@ -362,7 +362,7 @@ func (s *AuthService) ForgotPassword(emailStr string) error {
 	return s.handleOTPGeneration(emailStr, true)
 }
 
-//reset password
+// reset password
 func (s *AuthService) ResetPassword(emailStr, otpCode, newPasswordStr string) error {
 	var user models.User
 	_, err := s.repo.FindOneWhere(&user, "email = ?", emailStr)

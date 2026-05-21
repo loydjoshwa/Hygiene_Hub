@@ -90,7 +90,7 @@ func (r *cartRepository) UpdateCartItem(item *models.CartItem) error {
 // RemoveCartItem deletes a specific item from a cart
 func (r *cartRepository) RemoveCartItem(itemID string, cartID string) error {
 	// We check cartID as well to ensure the item belongs to the user's cart
-	result := r.db.Where("id = ? AND cart_id = ?", itemID, cartID).Delete(&models.CartItem{})
+	result := r.db.Unscoped().Where("id = ? AND cart_id = ?", itemID, cartID).Delete(&models.CartItem{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -102,5 +102,5 @@ func (r *cartRepository) RemoveCartItem(itemID string, cartID string) error {
 
 // ClearCart deletes all items inside a specific cart
 func (r *cartRepository) ClearCart(cartID string) error {
-	return r.db.Where("cart_id = ?", cartID).Delete(&models.CartItem{}).Error
+	return r.db.Unscoped().Where("cart_id = ?", cartID).Delete(&models.CartItem{}).Error
 }

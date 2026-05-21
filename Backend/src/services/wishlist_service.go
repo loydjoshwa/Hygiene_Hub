@@ -7,6 +7,7 @@ import (
 	"hygienehub/src/repository"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type WishlistService struct {
@@ -40,8 +41,6 @@ func (s *WishlistService) AddToWishlist(userID string, req *dto.AddToWishlistReq
 		return nil, errors.New("failed to cast created wishlist item")
 	}
 
-	db.Preload("Product").First(createdItem, "id = ?", createdItem.ID)
-
 	return createdItem, nil
 }
 
@@ -52,6 +51,18 @@ func (s *WishlistService) GetWishlist(userID string) ([]models.Wishlist, error) 
 		return nil, err
 	}
 	return items, nil
+}
+
+func (s *WishlistService) GetWishlistItemByID(id string, userID string) (*models.Wishlist, error) {
+	var item models.Wishlist
+	db := s.repo.GetDB()
+	if err := db.Where("id = ? AND user_id = ?", id, userID).First(&item).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.New("wishlist item not found")
+		}
+		return nil, err
+	}
+	return &item, nil
 }
 
 func (s *WishlistService) RemoveFromWishlist(id string, userID string) error {

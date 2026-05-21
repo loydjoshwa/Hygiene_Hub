@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -31,70 +32,18 @@ const Login = () => {
       setLoading(true);
 
       try {
-        localStorage.removeItem('adminEmail');
-        localStorage.removeItem('adminName');
-
-        try {
-          const adminRes = await axios.get('http://localhost:3130/Admin');
-          const admin = adminRes.data?.find(
-            a => a.email === values.email && a.password === values.password
-          );
-
-          if (admin) {
-            
-            localStorage.removeItem('user');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('token');
-
-            localStorage.setItem('adminLogged', 'true');
-            localStorage.setItem('adminEmail', admin.email);
-            localStorage.setItem('adminName', admin.name || 'Admin');
-
-            toast.success('Admin login successful!', {
-              position: "top-center",
-              autoClose: 1500,
-            });
-            
-            setTimeout(() => {
-              navigate('/admin/dashboard');
-            }, 1000);
-
-            return;
-          }
-        } catch (adminError) {
-          console.log('Admin check error:', adminError);
-        }
-
-    
-        const userRes = await axios.get("http://localhost:3130/users");
-        const user = userRes.data.find(
-          (u) => u.email === values.email && u.password === values.password
-        );
-
-        if (user) {
-          if (user.status === 'blocked') {
-            toast.error('Your account has been blocked');
-            setLoading(false);
-            return;
-          }
-
-          
-          localStorage.setItem('adminLogged', 'false');
-          localStorage.removeItem('adminEmail');
-          localStorage.removeItem('adminName');
-
+        const user = await login(values.email, values.password);
+        toast.success('Login successful!');
         
-          login(user);
-          toast.success('Login successful!');
-          navigate('/');
+        if (user.role === 'admin') {
+          navigate('/admin/dashboard');
         } else {
-          toast.error('Invalid email or password');
-          setLoading(false);
+          navigate('/');
         }
-
       } catch (error) {
         console.error('Login error:', error);
-        toast.error('Something went wrong. Please try again.');
+        toast.error(error.message || 'Invalid email or password');
+      } finally {
         setLoading(false);
       }
     }

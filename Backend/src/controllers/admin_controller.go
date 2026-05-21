@@ -34,8 +34,8 @@ func (a *AdminController) UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var req dto.UpdateUserRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
 
 	user, err := a.adminService.UpdateUser(id, &req)
@@ -53,9 +53,11 @@ func (a *AdminController) UpdateUserBlockStatus(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var req dto.BlockUserRequest
 
-	if err := parseAndValidate(c, &req); err != nil {
-		return err
+	if !parseAndValidate(c, &req) {
+		return nil
 	}
+
+	logger.Log.Infof("Received block status update request for user %s: is_blocked=%v", id, req.IsBlocked)
 
 	err := a.adminService.UpdateUserBlockStatus(id, &req)
 	if err != nil {

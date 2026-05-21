@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type CartItem struct {
@@ -12,6 +11,9 @@ type CartItem struct {
 
 	// Relates to the Cart
 	CartID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_cart_product" json:"cart_id"`
+
+	// Relates to the User (added to match DB schema)
+	UserID uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
 
 	// Belongs To relationship
 	Cart Cart `gorm:"foreignKey:CartID" json:"-"`
@@ -30,6 +32,5 @@ type CartItem struct {
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 

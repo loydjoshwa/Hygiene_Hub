@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 import { useAuth } from "../Context/CartContext";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -10,10 +10,9 @@ const MyOrders = () => {
 
   useEffect(() => {
     if (currentUser) {
-      axios.get("http://localhost:3130/orders")
+      axiosInstance.get("/user/orders")
         .then(res => {
-          const userOrders = res.data.filter(order => order.userId === currentUser.id);
-          setOrders(userOrders);
+          setOrders(res.data || []);
         })
         .catch(err => console.log(err));
     }

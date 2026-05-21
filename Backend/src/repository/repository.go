@@ -21,13 +21,20 @@ func (r *Repository) UpdateByFields(obj interface{}, id interface{}, fields map[
 }
 
 func (r *Repository) Delete(obj interface{}, id interface{}) error {
-	return r.DB.Where("id = ?", id).Delete(obj).Error
+	result := r.DB.Where("id = ?", id).Delete(obj)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 func (r *Repository) DeleteWhere(obj interface{}, query string, args ...interface{}) error {
 	return r.DB.Where(query, args...).Delete(obj).Error
 }
 func (r *Repository) FindByID(obj interface{}, id interface{}) (interface{}, error) {
-	if err := r.DB.First(obj, "id = ?", id).Error; err != nil {
+	if err := r.DB.Take(obj, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return obj, nil

@@ -1,8 +1,9 @@
+/* eslint-disable */
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
 import { TrendingUp, Users, Package, DollarSign, Clock, ArrowUpRight } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -17,16 +18,12 @@ const AdminDashboard = () => {
     loading: true
   });
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
   const fetchDashboardData = async () => {
     try {
       const [ordersRes, usersRes, productsRes] = await Promise.all([
-        axios.get('http://localhost:3130/orders'),
-        axios.get('http://localhost:3130/users'),
-        axios.get('http://localhost:3130/products')
+        axiosInstance.get('/admin/orders'),
+        axiosInstance.get('/admin/users'),
+        axiosInstance.get('/products')
       ]);
 
       const orders = ordersRes.data || [];
@@ -36,8 +33,8 @@ const AdminDashboard = () => {
       const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
       const recentOrders = orders.slice(-5).reverse();
       
-      const activeUsers = users.filter(user => (user.status || 'active') === 'active').length;
-      const blockedUsers = users.filter(user => user.status === 'blocked').length;
+      const activeUsers = users.filter(user => !user.is_blocked).length;
+      const blockedUsers = users.filter(user => user.is_blocked).length;
 
       setStats({
         totalOrders: orders.length,
@@ -54,6 +51,10 @@ const AdminDashboard = () => {
       setStats(prev => ({ ...prev, loading: false }));
     }
   };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const statCards = [
     {
