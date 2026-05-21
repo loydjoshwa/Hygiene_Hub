@@ -11,7 +11,7 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const { addToCart } = useCart();
+  const { addToCart, cartItems } = useCart();
   const { addToWishlist, currentUser, isInWishlist, isSessionActive } = useAuth();
   const navigate = useNavigate()
   useEffect(() => {
@@ -57,7 +57,12 @@ const Products = () => {
 
     try {
       await addToCart(product);
-      toast.success(`${product.name} added to cart!`);
+      const existingItem = cartItems && cartItems.find(item => item.productId === product.id);
+      if (existingItem) {
+        toast.info(`Increased quantity of ${product.name} in cart!`);
+      } else {
+        toast.success(`${product.name} added to cart!`);
+      }
     } catch (error) {
       toast.error(error.message);
     }
@@ -262,11 +267,16 @@ const Products = () => {
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleAddToCart(product)}
-                      className="flex-1 group/cart bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 px-4 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                      disabled={!product.in_stock || product.stock <= 0}
+                      className={`flex-1 group/cart text-white py-3 px-4 rounded-xl transition-all duration-300 font-bold shadow-lg flex items-center justify-center gap-2 ${
+                        !product.in_stock || product.stock <= 0
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 hover:shadow-xl transform hover:-translate-y-1'
+                      }`}
                     >
                       <span className="group-hover/cart:rotate-12 transition-transform text-lg">🛒</span>
-                      Add to Cart
-                      <span className="group-hover/cart:translate-x-1 transition-transform">→</span>
+                      {!product.in_stock || product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                      {!product.in_stock || product.stock <= 0 ? null : <span className="group-hover/cart:translate-x-1 transition-transform">→</span>}
                     </button>
                   </div>
                 </div>

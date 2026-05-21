@@ -103,7 +103,7 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 
 	access, refresh, user, err := a.authService.Login(req.Email, req.Password)
 	if err != nil {
-		logger.Log.Error("Login failed:", err)
+		logger.Log.Warn("Login failed:", err)
 		return c.Status(constant.UNAUTHORIZED).
 			JSON(fiber.Map{"error": err.Error()})
 	}

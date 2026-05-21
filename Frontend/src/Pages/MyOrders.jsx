@@ -19,10 +19,10 @@ const MyOrders = () => {
   }, [currentUser]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
 
-      <div className="pt-20 max-w-5xl mx-auto p-4">
+      <div className="pt-20 max-w-5xl mx-auto p-4 flex-grow w-full">
         <h1 className="text-3xl font-bold mb-6">My Orders</h1>
 
         {orders.length === 0 ? (

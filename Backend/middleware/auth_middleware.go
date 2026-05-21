@@ -4,7 +4,6 @@ import (
 	"hygienehub/internal/cache"
 	"hygienehub/utils/constant"
 	"hygienehub/utils/jwt"
-	"hygienehub/utils/logger"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,7 +15,6 @@ func AuthMiddleware(jwtManager *jwt.Manager, redisCache *cache.Redis) fiber.Hand
 
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			logger.Log.Warnf("AuthMiddleware triggered, but authorization header is missing. URL: %s, Method: %s", c.OriginalURL(), c.Method())
 			return c.Status(constant.UNAUTHORIZED).
 				JSON(fiber.Map{"error": "Authorization header missing"})
 		}

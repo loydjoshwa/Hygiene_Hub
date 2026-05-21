@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
-import axiosInstance from '../../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstance';
 import { TrendingUp, Users, Package, DollarSign, Clock, ArrowUpRight } from 'lucide-react';
 
 const AdminDashboard = () => {

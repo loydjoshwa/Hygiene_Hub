@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
-import axiosInstance from '../../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstance';
 import { Search, User, Mail, Shield, CheckCircle, XCircle, Key } from 'lucide-react';
 
 const ManageUsers = () => {

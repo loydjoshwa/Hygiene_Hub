@@ -2,11 +2,16 @@ package database
 
 import (
 	"fmt"
-	"hygienehub/src/models"
+	"log"
+	"os"
 	"sync"
+	"time"
+
+	"hygienehub/src/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 var pgOnce sync.Once
@@ -27,7 +32,19 @@ func SetupDatabase(cfg *models.Config) *gorm.DB {
 			cfg.DB.TimeZone,
 		)
 
-		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		newLogger := gormlogger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			gormlogger.Config{
+				SlowThreshold:             time.Second,     // Slow SQL threshold (1s)
+				LogLevel:                  gormlogger.Warn, // Log level
+				IgnoreRecordNotFoundError: true,            // Ignore ErrRecordNotFound error for logger
+				Colorful:                  true,            // Disable color
+			},
+		)
+
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: newLogger,
+		})
 		if err != nil {
 			panic("failed to connect database: " + err.Error())
 		}

@@ -24,18 +24,78 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response Interceptor: Handle global responses (e.g., 401 Unauthorized)
 axiosInstance.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token might be expired, clear local storage and redirect to login
-      // We check if it's an access_token related error to avoid clearing mock admin logins yet
-      if (localStorage.getItem('access_token')) {
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      // If we are already refreshing, queue the request
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return axiosInstance(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem('refresh_token');
+
+      if (refreshToken) {
+        try {
+          const res = await axios.post(`${axiosInstance.defaults.baseURL}/auth/refresh`, {
+            refresh_token: refreshToken
+          });
+
+          const newAccessToken = res.data.access_token;
+          const newRefreshToken = res.data.refresh_token;
+
+          localStorage.setItem('access_token', newAccessToken);
+          localStorage.setItem('refresh_token', newRefreshToken);
+
+          axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
+          originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
+
+          processQueue(null, newAccessToken);
+          
+          return axiosInstance(originalRequest);
+        } catch (err) {
+          processQueue(err, null);
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('currentUser');
+          window.location.href = '/login';
+          return Promise.reject(err);
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
         localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('currentUser');
         window.location.href = '/login';
       }
     }

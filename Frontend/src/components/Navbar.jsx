@@ -101,7 +101,7 @@ const Navbar = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-green-400 rounded-full flex items-center justify-center">
                   <IoPersonOutline size={18} />
                 </div>
-                <span className="font-semibold">{currentUser.username}</span>
+                <span className="font-semibold">{currentUser.name || currentUser.username}</span>
               </div>
             </li>
           ) : (
@@ -188,7 +188,7 @@ const Navbar = () => {
                     <IoPersonOutline size={20} />
                   </div>
                   <div>
-                    <p className="font-semibold">{currentUser.username}</p>
+                    <p className="font-semibold">{currentUser.name || currentUser.username}</p>
                     <p className="text-sm text-gray-400">{currentUser.email}</p>
                   </div>
                 </div>
