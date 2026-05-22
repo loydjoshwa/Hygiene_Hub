@@ -60,7 +60,7 @@ func (s *ProductService) CreateProduct(
 	if req.InStock != nil {
 		product.InStock = *req.InStock
 	} else {
-		product.InStock = true
+		product.InStock = req.Stock > 0
 	}
 
 	// Upload image
@@ -283,6 +283,9 @@ func (s *ProductService) UpdateProduct(
 
 	if req.Stock != nil {
 		fieldsToUpdate["stock"] = *req.Stock
+		if req.InStock == nil {
+			fieldsToUpdate["in_stock"] = *req.Stock > 0
+		}
 	}
 
 	if req.InStock != nil {

@@ -1,8 +1,6 @@
-/* eslint-disable */
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import { useAuth } from '../Context/CartContext';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -12,8 +10,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {}, []);
 
   const formik = useFormik({
     initialValues: {
@@ -154,4 +150,3 @@ const Login = () => {
 };
 
 export default Login;
-

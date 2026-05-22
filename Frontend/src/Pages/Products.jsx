@@ -1,6 +1,4 @@
-/* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -13,29 +11,38 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { addToCart, cartItems } = useCart();
   const { addToWishlist, currentUser, isInWishlist, isSessionActive } = useAuth();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
   useEffect(() => {
+    let active = true;
     const fetchProducts = async () => {
       try {
         const { default: axiosInstance } = await import('../utils/axiosInstance');
         const response = await axiosInstance.get('/products');
         
-        // Map backend fields to frontend expected fields
-        const mappedProducts = response.data.map(p => ({
-          ...p,
-          image: p.main_image
-        }));
-        
-        setProducts(mappedProducts);
-        setLoading(false);
+        if (active) {
+          // Map backend fields to frontend expected fields
+          const mappedProducts = response.data.map(p => ({
+            ...p,
+            image: p.main_image
+          }));
+          
+          setProducts(mappedProducts);
+          setLoading(false);
+        }
       } catch (error) {
-        console.error('Error fetching products:', error);
-        toast.error('Failed to load products');
-        setLoading(false);
+        if (active) {
+          console.error('Error fetching products:', error);
+          toast.error('Failed to load products');
+          setLoading(false);
+        }
       }
     };
 
     fetchProducts();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const filteredProducts = React.useMemo(() => {

@@ -1,5 +1,4 @@
-/* eslint-disable */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
@@ -11,7 +10,7 @@ const ManageOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const response = await axiosInstance.get('/admin/orders');
       setOrders(response.data || []);
@@ -21,11 +20,20 @@ const ManageOrders = () => {
       toast.error('Failed to load orders');
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    let ignore = false;
+    const load = async () => {
+      if (!ignore) {
+        await fetchOrders();
+      }
+    };
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [fetchOrders]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -54,7 +62,7 @@ const ManageOrders = () => {
         month: 'short',
         year: 'numeric'
       });
-    } catch (error) {
+    } catch {
       return 'Invalid Date';
     }
   };

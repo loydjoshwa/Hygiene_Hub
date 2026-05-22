@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
@@ -18,42 +16,38 @@ const AdminDashboard = () => {
     loading: true
   });
 
-  const fetchDashboardData = async () => {
-    try {
-      const [ordersRes, usersRes, productsRes] = await Promise.all([
-        axiosInstance.get('/admin/orders'),
-        axiosInstance.get('/admin/users'),
-        axiosInstance.get('/products')
-      ]);
-
-      const orders = ordersRes.data || [];
-      const users = usersRes.data || [];
-      const products = productsRes.data || [];
-
-      const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-      const recentOrders = orders.slice(-5).reverse();
-      
-      const activeUsers = users.filter(user => !user.is_blocked).length;
-      const blockedUsers = users.filter(user => user.is_blocked).length;
-
-      setStats({
-        totalOrders: orders.length,
-        totalRevenue,
-        totalUsers: users.length,
-        activeUsers,
-        blockedUsers,
-        totalProducts: products.length,
-        recentOrders,
-        loading: false
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setStats(prev => ({ ...prev, loading: false }));
-    }
-  };
-
   useEffect(() => {
+    let ignore = false;
+
+    const fetchDashboardData = async () => {
+      try {
+        const response = await axiosInstance.get('/admin/stats');
+        if (!ignore) {
+          const data = response.data;
+          setStats({
+            totalOrders: data.total_orders,
+            totalRevenue: data.total_revenue,
+            totalUsers: data.total_users,
+            activeUsers: data.active_users,
+            blockedUsers: data.blocked_users,
+            totalProducts: data.total_products,
+            recentOrders: data.recent_orders || [],
+            loading: false
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        if (!ignore) {
+          setStats(prev => ({ ...prev, loading: false }));
+        }
+      }
+    };
+
     fetchDashboardData();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const statCards = [

@@ -20,19 +20,52 @@ func NewAdminService(repo repository.PgSQLRepository, redis *cache.Redis) *Admin
 // GetDashboardStats returns stats for the admin dashboard
 func (s *AdminService) GetDashboardStats() (*dto.DashboardStatsResponse, error) {
 	var totalUsers int64
+	var activeUsers int64
+	var blockedUsers int64
 	var totalProducts int64
+	var totalOrders int64
+	var totalRevenue int64
+	var recentOrders []models.Order
 
-	if err := s.repo.Count(&models.User{}, &totalUsers); err != nil {
+	db := s.repo.GetDB()
+
+	if err := db.Model(&models.User{}).Count(&totalUsers).Error; err != nil {
 		return nil, errors.New("failed to count users")
 	}
 
-	if err := s.repo.Count(&models.Product{}, &totalProducts); err != nil {
+	if err := db.Model(&models.User{}).Where("is_blocked = ?", false).Count(&activeUsers).Error; err != nil {
+		return nil, errors.New("failed to count active users")
+	}
+
+	if err := db.Model(&models.User{}).Where("is_blocked = ?", true).Count(&blockedUsers).Error; err != nil {
+		return nil, errors.New("failed to count blocked users")
+	}
+
+	if err := db.Model(&models.Product{}).Count(&totalProducts).Error; err != nil {
 		return nil, errors.New("failed to count products")
 	}
 
+	if err := db.Model(&models.Order{}).Count(&totalOrders).Error; err != nil {
+		return nil, errors.New("failed to count orders")
+	}
+
+	if err := db.Model(&models.Order{}).Select("COALESCE(SUM(total), 0)").Row().Scan(&totalRevenue); err != nil {
+		return nil, errors.New("failed to calculate revenue")
+	}
+
+	// We only need the latest 5 orders for the dashboard overview
+	if err := db.Model(&models.Order{}).Order("order_date DESC").Limit(5).Find(&recentOrders).Error; err != nil {
+		return nil, errors.New("failed to fetch recent orders")
+	}
+
 	return &dto.DashboardStatsResponse{
+		TotalOrders:   totalOrders,
+		TotalRevenue:  totalRevenue,
 		TotalUsers:    totalUsers,
+		ActiveUsers:   activeUsers,
+		BlockedUsers:  blockedUsers,
 		TotalProducts: totalProducts,
+		RecentOrders:  recentOrders,
 	}, nil
 }
 

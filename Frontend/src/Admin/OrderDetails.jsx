@@ -1,6 +1,5 @@
-/* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
 import axiosInstance from '../utils/axiosInstance';
@@ -13,30 +12,36 @@ const OrderDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchOrder = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await axiosInstance.get(`/admin/orders/${id}`);
-      
-      if (response.data) {
-        setOrder(response.data);
-      } else {
-        setError('Order not found');
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching order:', error);
-      setError('Failed to load order. Please try again.');
-      toast.error('Failed to load order');
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    if (id) {
-      fetchOrder();
-    }
+    let active = true;
+    const load = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        setError('');
+        const response = await axiosInstance.get(`/admin/orders/${id}`);
+        if (active) {
+          if (response.data) {
+            setOrder(response.data);
+          } else {
+            setError('Order not found');
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        if (active) {
+          console.error('Error fetching order:', err);
+          setError('Failed to load order. Please try again.');
+          toast.error('Failed to load order');
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const updateOrderStatus = async (newStatus) => {
@@ -44,8 +49,8 @@ const OrderDetails = () => {
       await axiosInstance.patch(`/admin/orders/${id}/status`, { status: newStatus });
       setOrder({ ...order, status: newStatus });
       toast.success(`Order status updated to ${newStatus}`);
-    } catch (error) {
-      console.error('Error updating order status:', error);
+    } catch (err) {
+      console.error('Error updating order status:', err);
       toast.error('Failed to update order status');
     }
   };
@@ -81,7 +86,7 @@ const OrderDetails = () => {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (error) {
+    } catch {
       return 'Invalid Date';
     }
   };

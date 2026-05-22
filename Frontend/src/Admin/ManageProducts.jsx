@@ -1,32 +1,44 @@
-/* eslint-disable */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
 import axiosInstance from '../utils/axiosInstance';
-import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Search, Plus, X } from 'lucide-react';
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await axiosInstance.get("/products");
       setProducts(response.data || []);
-      setLoading(false);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load products");
-      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchProducts();
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await axiosInstance.get("/products");
+        if (active) {
+          setProducts(response.data || []);
+        }
+      } catch (error) {
+        if (active) {
+          toast.error(error.response?.data?.message || "Failed to load products");
+        }
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   
@@ -34,6 +46,7 @@ const ManageProducts = () => {
     name: Yup.string().required("Product name is required"),
     price: Yup.number().required("Price required").positive(),
     description: Yup.string().required("Description required"),
+    stock: Yup.number().required("Stock is required").integer("Stock must be an integer").min(0, "Stock cannot be negative"),
     image: Yup.mixed().required("Image is required"),
   });
 
@@ -42,6 +55,7 @@ const ManageProducts = () => {
       name: "",
       price: "",
       description: "",
+      stock: 100,
       image: null,
     },
     validationSchema,
@@ -53,7 +67,7 @@ const ManageProducts = () => {
         formData.append("category", "General");
         formData.append("description", values.description);
         formData.append("price", Number(values.price));
-        formData.append("stock", 100);
+        formData.append("stock", Number(values.stock));
 
         if (values.image instanceof File) {
           formData.append("main_image", values.image);
@@ -87,6 +101,7 @@ const ManageProducts = () => {
       name: product.name,
       price: product.price,
       description: product.description,
+      stock: product.stock !== undefined ? product.stock : 100,
       image: product.image || product.main_image || null,
     });
 
@@ -150,6 +165,7 @@ const ManageProducts = () => {
                   <th className="px-6 py-4">Image</th>
                   <th className="px-6 py-4">Details</th>
                   <th className="px-6 py-4">Price</th>
+                  <th className="px-6 py-4">Stock</th>
                   <th className="px-6 py-4">Actions</th>
                 </tr>
               </thead>
@@ -157,7 +173,7 @@ const ManageProducts = () => {
                 {filteredProducts.map((p) => (
                   <tr key={p.id} className="border-t">
                     <td className="px-6 py-4">
-                      <img src={p.image} className="w-20 h-20 rounded-xl object-cover border" />
+                      <img src={p.image || p.main_image} className="w-20 h-20 rounded-xl object-cover border" />
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-bold">{p.name}</div>
@@ -165,6 +181,15 @@ const ManageProducts = () => {
                     </td>
 
                     <td className="px-6 py-4 font-bold text-lg">₹{p.price}</td>
+
+                    <td className="px-6 py-4 font-bold text-lg">
+                      {p.stock}
+                      {(!p.in_stock || p.stock <= 0) && (
+                        <span className="ml-2 px-2 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
+                          Out of Stock
+                        </span>
+                      )}
+                    </td>
 
                     <td className="px-6 py-4 flex gap-3">
                       <button
@@ -246,6 +271,22 @@ const ManageProducts = () => {
                   />
                   {formik.touched.price && formik.errors.price && (
                     <p className="text-red-500 text-sm">{formik.errors.price}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">Stock *</label>
+                  <input
+                    type="number"
+                    name="stock"
+                    placeholder="Enter stock"
+                    className="w-full px-4 py-3 border rounded-xl"
+                    value={formik.values.stock}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  {formik.touched.stock && formik.errors.stock && (
+                    <p className="text-red-500 text-sm">{formik.errors.stock}</p>
                   )}
                 </div>
 

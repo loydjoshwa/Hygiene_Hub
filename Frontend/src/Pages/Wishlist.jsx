@@ -8,7 +8,7 @@ import { useAuth, useCart } from '../Context/CartContext';
 const Wishlist = () => {
   const navigate=useNavigate()
   const { wishlistItems, removeFromWishlist, currentUser, isSessionActive} = useAuth();
-  const { addToCart, moveToCart } = useCart();
+  const { moveToCart } = useCart();
 
   const handleRemoveFromWishlist = (productId, productName) => {
       if (!currentUser|| !isSessionActive()) {
@@ -141,9 +141,14 @@ const Wishlist = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleAddToCart(item)}
-                          className="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 font-medium"
+                          disabled={!item.in_stock || item.stock <= 0}
+                          className={`flex-1 py-2 px-4 rounded-lg transition-colors duration-300 font-medium ${
+                            !item.in_stock || item.stock <= 0
+                              ? 'bg-slate-400 cursor-not-allowed text-white'
+                              : 'bg-green-500 text-white hover:bg-green-600'
+                          }`}
                         >
-                          Add to Cart
+                          {!item.in_stock || item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                         </button>
                         <button
                           onClick={() => handleRemoveFromWishlist(item.productId, item.name)}

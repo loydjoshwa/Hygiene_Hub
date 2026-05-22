@@ -1,34 +1,41 @@
-/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { toast } from 'react-toastify';
 import axiosInstance from '../utils/axiosInstance';
-import { Search, User, Mail, Shield, CheckCircle, XCircle, Key } from 'lucide-react';
+import { Search, User, Mail, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchUsers = async () => {
-    try {
-      const response = await axiosInstance.get('/admin/users');
-      const usersWithStatus = response.data.map(user => ({
-        ...user,
-        username: user.name || user.username,
-        status: user.is_blocked ? 'blocked' : 'active'
-      }));
-      setUsers(usersWithStatus || []);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to load users');
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchUsers();
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await axiosInstance.get('/admin/users');
+        if (active) {
+          const usersWithStatus = response.data.map(user => ({
+            ...user,
+            username: user.name || user.username,
+            status: user.is_blocked ? 'blocked' : 'active'
+          }));
+          setUsers(usersWithStatus || []);
+          setLoading(false);
+        }
+      } catch (error) {
+        if (active) {
+          console.error('Error:', error);
+          toast.error('Failed to load users');
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const toggleUserStatus = async (userId, currentStatus) => {
@@ -106,7 +113,6 @@ const ManageUsers = () => {
               </svg>
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-3">No users found</h3>
-            
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">

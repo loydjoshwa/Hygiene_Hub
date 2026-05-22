@@ -1,7 +1,5 @@
-/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import Footer from '../components/Footer'; 
 import Navbar from '../components/Navbar';
@@ -15,28 +13,36 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let active = true;
     const fetchFeaturedProducts = async () => {
       try {
         const { default: axiosInstance } = await import('../utils/axiosInstance');
         const response = await axiosInstance.get('/products');
         
-        // Map backend fields to frontend expected fields
-        const mappedProducts = response.data.map(p => ({
-          ...p,
-          image: p.main_image
-        }));
-        
-        const products = mappedProducts.slice(0, 4);
-        setFeaturedProducts(products);
-        setLoading(false);
+        if (active) {
+          // Map backend fields to frontend expected fields
+          const mappedProducts = response.data.map(p => ({
+            ...p,
+            image: p.main_image
+          }));
+          
+          const products = mappedProducts.slice(0, 4);
+          setFeaturedProducts(products);
+          setLoading(false);
+        }
       } catch (error) {
-        console.error('Error fetching products:', error);
-        toast.error('Failed to load featured products');
-        setLoading(false);
+        if (active) {
+          console.error('Error fetching products:', error);
+          toast.error('Failed to load featured products');
+          setLoading(false);
+        }
       }
     };
 
     fetchFeaturedProducts();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleAddToCart = async (product) => {

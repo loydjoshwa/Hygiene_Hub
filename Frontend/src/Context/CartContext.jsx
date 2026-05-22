@@ -1,5 +1,4 @@
-/* eslint-disable */
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import axiosInstance from "../utils/axiosInstance";
 
 const CartContext = createContext();
@@ -38,7 +37,7 @@ export const CartProvider = ({ children }) => {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  async function fetchUserCartItems() {
+  const fetchUserCartItems = useCallback(async () => {
     if (!currentUser) return;
     try {
       const { data } = await axiosInstance.get("/user/cart");
@@ -53,14 +52,15 @@ export const CartProvider = ({ children }) => {
         quantity: item.quantity,
         userId: item.user_id,
         stock: item.product?.stock || 0,
+        in_stock: item.product?.in_stock !== undefined ? item.product?.in_stock : true,
       }));
       setCartItems(mappedItems);
     } catch (err) {
       console.error("Error fetching cart:", err);
     }
-  }
+  }, [currentUser]);
 
-  async function fetchUserWishlistItems() {
+  const fetchUserWishlistItems = useCallback(async () => {
     if (!currentUser) return;
     try {
       const { data } = await axiosInstance.get("/user/wishlist");
@@ -73,12 +73,13 @@ export const CartProvider = ({ children }) => {
         description: item.product?.description || "",
         userId: item.user_id,
         stock: item.product?.stock || 0,
+        in_stock: item.product?.in_stock !== undefined ? item.product?.in_stock : true,
       }));
       setWishlistItems(mappedItems);
     } catch (err) {
       console.error("Error fetching wishlist:", err);
     }
-  }
+  }, [currentUser]);
 
   useEffect(() => {
     if (currentUser) {
@@ -88,13 +89,12 @@ export const CartProvider = ({ children }) => {
       setCartItems([]);
       setWishlistItems([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUser, fetchUserCartItems, fetchUserWishlistItems]);
 
   const login = async (email, password) => {
     try {
       const res = await axiosInstance.post("/auth/login", { email, password });
-      const { access_token, refresh_token, role } = res.data;
+      const { access_token, refresh_token } = res.data;
       
       localStorage.setItem("access_token", access_token);
       localStorage.setItem("refresh_token", refresh_token);
@@ -147,7 +147,7 @@ export const CartProvider = ({ children }) => {
         return false;
       }
       return true;
-    } catch (err) {
+    } catch {
       logout();
       return false;
     }
