@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-)   
+)
 
 // CartService contains the business logic for cart operations
 type CartService struct {
@@ -62,7 +62,7 @@ func (s *CartService) AddToCart(userID string, req *dto.AddToCartRequest) (*mode
 		// Product already in cart, just increase the quantity
 		newQuantity := existingItem.Quantity + req.Quantity
 		if newQuantity > product.Stock {
-			return nil, errors.New("requested quantity exceeds available stock")
+			return nil, errors.New("out of stock")
 		}
 		existingItem.Quantity = newQuantity
 		// Update price to current price (optional, but good for accuracy)
@@ -79,7 +79,7 @@ func (s *CartService) AddToCart(userID string, req *dto.AddToCartRequest) (*mode
 
 	// 5. Product is not in cart, check if req.Quantity exceeds stock
 	if req.Quantity > product.Stock {
-		return nil, errors.New("requested quantity exceeds available stock")
+		return nil, errors.New("out of stock")
 	}
 
 	// Create a new cart item
@@ -155,7 +155,7 @@ func (s *CartService) UpdateCartQuantity(userID string, itemID string, quantity 
 	}
 
 	if quantity > product.Stock {
-		return nil, errors.New("requested quantity exceeds available stock")
+		return nil, errors.New("out of stock")
 	}
 
 	// 4. Update the quantity and save

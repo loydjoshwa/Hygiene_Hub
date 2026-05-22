@@ -40,7 +40,7 @@ func AuthMiddleware(jwtManager *jwt.Manager, redisCache *cache.Redis) fiber.Hand
 		}
 
 		// Check if session is in Redis blacklist
-		err = redisCache.Client.Get(cache.Ctx, "blacklist:session:"+sessionID).Err()
+		_, err = redisCache.Get(cache.Ctx, "blacklist:session:"+sessionID)
 		if err == nil {
 			return c.Status(constant.UNAUTHORIZED).
 				JSON(fiber.Map{"error": "Session has been revoked"})
@@ -56,7 +56,7 @@ func AuthMiddleware(jwtManager *jwt.Manager, redisCache *cache.Redis) fiber.Hand
 		}
 
 		// Check if user is globally blocked
-		err = redisCache.Client.Get(cache.Ctx, "blacklist:user:"+userID).Err()
+		_, err = redisCache.Get(cache.Ctx, "blacklist:user:"+userID)
 		if err == nil {
 			return c.Status(constant.FORBIDDEN).
 				JSON(fiber.Map{"error": "Your account has been blocked"})

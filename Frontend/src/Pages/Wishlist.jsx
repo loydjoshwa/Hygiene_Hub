@@ -8,7 +8,7 @@ import { useAuth, useCart } from '../Context/CartContext';
 const Wishlist = () => {
   const navigate=useNavigate()
   const { wishlistItems, removeFromWishlist, currentUser, isSessionActive} = useAuth();
-  const { addToCart } = useCart();
+  const { addToCart, moveToCart } = useCart();
 
   const handleRemoveFromWishlist = (productId, productName) => {
       if (!currentUser|| !isSessionActive()) {
@@ -28,8 +28,8 @@ const Wishlist = () => {
     }
 
     try {
-      await addToCart(product);
-      toast.success(`${product.name} added to cart!`);
+      await moveToCart(product.id);
+      toast.success(`${product.name} moved to cart!`);
     } catch (error) {
       toast.error(error.message);
     }
@@ -44,7 +44,7 @@ const Wishlist = () => {
 
     try {
       for (const item of wishlistItems) {
-        await addToCart(item);
+        await moveToCart(item.id);
       }
       toast.success('All items moved to cart!');
     } catch (error) {

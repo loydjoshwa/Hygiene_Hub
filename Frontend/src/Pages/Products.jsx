@@ -251,16 +251,6 @@ const Products = () => {
                       </span>
                       <p className="text-xs text-gray-500">per piece</p>
                     </div>
-                    <div className="flex flex-col items-end">
-                      <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
-                        <div className="flex text-yellow-500 text-sm">
-                          {'★'.repeat(Math.floor(product.rating))}
-                          {'☆'.repeat(5 - Math.floor(product.rating))}
-                        </div>
-                        <span className="text-sm font-bold text-gray-700 ml-2">{product.rating}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">Customer Rating</p>
-                    </div>
                   </div>
 
                  

@@ -187,13 +187,6 @@ const Home = () => {
                       
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">₹{product.price}</span>
-                        <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full">
-                          <div className="flex text-yellow-400">
-                            {'★'.repeat(Math.floor(product.rating))}
-                            {'☆'.repeat(5 - Math.floor(product.rating))}
-                          </div>
-                          <span className="text-sm text-gray-600 ml-1">({product.rating})</span>
-                        </div>
                       </div>
 
                       <div className="flex gap-2">

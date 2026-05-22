@@ -103,13 +103,13 @@ func (s *AdminService) UpdateUserBlockStatus(userID string, req *dto.BlockUserRe
 
 	if isBlocked {
 		// Blacklist the user globally in Redis (permanent until unblocked)
-		if err := s.redis.Client.Set(cache.Ctx, "blacklist:user:"+userID, "blocked", 0).Err(); err != nil {
+		if err := s.redis.Set(cache.Ctx, "blacklist:user:"+userID, "blocked", 0); err != nil {
 			return err
 		}
 		// Revoke all active sessions - use user.ID (UUID) for consistency
 		return s.repo.DeleteWhere(&models.RefreshToken{}, "user_id = ?", user.ID)
 	} else {
 		// Remove from blacklist
-		return s.redis.Client.Del(cache.Ctx, "blacklist:user:"+userID).Err()
+		return s.redis.Del(cache.Ctx, "blacklist:user:"+userID)
 	}
 }

@@ -52,6 +52,7 @@ export const CartProvider = ({ children }) => {
         description: item.product?.description || "",
         quantity: item.quantity,
         userId: item.user_id,
+        stock: item.product?.stock || 0,
       }));
       setCartItems(mappedItems);
     } catch (err) {
@@ -71,6 +72,7 @@ export const CartProvider = ({ children }) => {
         image: item.product?.main_image || "",
         description: item.product?.description || "",
         userId: item.user_id,
+        stock: item.product?.stock || 0,
       }));
       setWishlistItems(mappedItems);
     } catch (err) {
@@ -151,17 +153,59 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  const getProductStockLimit = (productId, fallbackItem) => {
+    const item = cartItems.find((i) => i.productId === productId);
+    if (item) return item.stock;
+    if (fallbackItem && fallbackItem.stock !== undefined) return fallbackItem.stock;
+    return 9999;
+  };
+
   const addToCart = async (product) => {
     if (!(await validateUser())) throw new Error("Session expired");
 
+    const productId = product.productId || product.id;
+    const existing = cartItems.find((item) => item.productId === productId);
+    const currentQty = existing ? existing.quantity : 0;
+    const stock = getProductStockLimit(productId, product);
+
+    if (currentQty + 1 > stock) {
+      throw new Error("Out of stock");
+    }
+
     try {
       await axiosInstance.post("/user/cart", {
-        product_id: product.id,
+        product_id: productId,
         quantity: 1,
       });
       fetchUserCartItems();
     } catch (error) {
       const errMsg = error.response?.data?.error || error.message || "Failed to add to cart";
+      throw new Error(errMsg);
+    }
+  };
+
+  const moveToCart = async (wishlistItemId) => {
+    if (!(await validateUser())) throw new Error("Session expired");
+
+    const wishItem = wishlistItems.find((item) => item.id === wishlistItemId);
+    if (wishItem) {
+      const productId = wishItem.productId;
+      const existing = cartItems.find((item) => item.productId === productId);
+      const currentQty = existing ? existing.quantity : 0;
+      const stock = getProductStockLimit(productId, wishItem);
+
+      if (currentQty + 1 > stock) {
+        throw new Error("Out of stock");
+      }
+    }
+
+    try {
+      const res = await axiosInstance.post(`/user/wishlist/${wishlistItemId}/move-to-cart`);
+      await fetchUserCartItems();
+      await fetchUserWishlistItems();
+      return res.data;
+    } catch (error) {
+      const errMsg = error.response?.data?.error || error.message || "Failed to move to cart";
       throw new Error(errMsg);
     }
   };
@@ -178,12 +222,16 @@ export const CartProvider = ({ children }) => {
     if (qty < 1) return removeFromCart(productId);
     const item = cartItems.find((i) => i.productId === productId);
     if (item) {
+      const stock = getProductStockLimit(productId, item);
+      if (qty > stock) {
+        throw new Error("Out of stock");
+      }
       try {
         await axiosInstance.put(`/user/cart/${item.id}`, { quantity: qty });
         fetchUserCartItems();
       } catch (error) {
         const errMsg = error.response?.data?.error || error.message || "Failed to update quantity";
-        throw new Error(errMsg); // Or we could toast.error directly here, but throwing is consistent
+        throw new Error(errMsg);
       }
     }
   };
@@ -191,22 +239,14 @@ export const CartProvider = ({ children }) => {
   const increaseQuantity = async (productId) => {
     const item = cartItems.find((i) => i.productId === productId);
     if (item) {
-      try {
-        await updateQuantity(productId, item.quantity + 1);
-      } catch (err) {
-        throw err;
-      }
+      await updateQuantity(productId, item.quantity + 1);
     }
   };
 
   const decreaseQuantity = async (productId) => {
     const item = cartItems.find((i) => i.productId === productId);
     if (item) {
-      try {
-        await updateQuantity(productId, item.quantity - 1);
-      } catch (err) {
-        throw err;
-      }
+      await updateQuantity(productId, item.quantity - 1);
     }
   };
 
@@ -287,6 +327,7 @@ export const CartProvider = ({ children }) => {
         value={{
           cartItems,
           addToCart,
+          moveToCart,
           removeFromCart,
           updateQuantity,
           increaseQuantity,

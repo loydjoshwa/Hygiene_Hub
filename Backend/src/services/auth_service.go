@@ -80,7 +80,7 @@ func (s *AuthService) handleOTPGeneration(emailStr string, isPasswordReset bool)
 	}
 
 	dataBytes, _ := json.Marshal(data)
-	if err := s.redis.Client.Set(cache.Ctx, key, dataBytes, ttl).Err(); err != nil {
+	if err := s.redis.Set(cache.Ctx, key, dataBytes, ttl); err != nil {
 		return errors.New("failed to store session in Redis: " + err.Error())
 	}
 
@@ -161,7 +161,7 @@ func (s *AuthService) VerifyOTP(emailStr, otpCode string) error {
 
 	key := "otp:verify:" + emailStr
 
-	val, err := s.redis.Client.Get(cache.Ctx, key).Result()
+	val, err := s.redis.Get(cache.Ctx, key)
 	if err != nil {
 		return errors.New("OTP expired or session not found")
 	}
@@ -187,7 +187,7 @@ func (s *AuthService) VerifyOTP(emailStr, otpCode string) error {
 		return errors.New("failed to verify user")
 	}
 
-	s.redis.Client.Del(cache.Ctx, key)
+	s.redis.Del(cache.Ctx, key)
 
 	return nil
 }
@@ -330,7 +330,7 @@ func (s *AuthService) Logout(sessionID, refreshToken string) error {
 	}
 
 	// Blacklist the session_id
-	err = s.redis.Client.Set(cache.Ctx, "blacklist:session:"+sessionID, "revoked", time.Duration(s.cfg.JWT.AccessTTLMinutes)*time.Minute).Err()
+	err = s.redis.Set(cache.Ctx, "blacklist:session:"+sessionID, "revoked", time.Duration(s.cfg.JWT.AccessTTLMinutes)*time.Minute)
 	if err != nil {
 		return errors.New("failed to blacklist session: " + err.Error())
 	}
@@ -371,7 +371,7 @@ func (s *AuthService) ResetPassword(emailStr, otpCode, newPasswordStr string) er
 	}
 
 	key := "otp:reset:" + emailStr
-	val, err := s.redis.Client.Get(cache.Ctx, key).Result()
+	val, err := s.redis.Get(cache.Ctx, key)
 	if err != nil {
 		return errors.New("OTP expired or invalid")
 	}
@@ -407,7 +407,7 @@ func (s *AuthService) ResetPassword(emailStr, otpCode, newPasswordStr string) er
 	s.repo.DeleteWhere(&models.RefreshToken{}, "user_id = ?", user.ID)
 
 	// delete OTP session
-	s.redis.Client.Del(cache.Ctx, key)
+	s.redis.Del(cache.Ctx, key)
 
 	logger.Log.Infof("Password successfully reset for %s", emailStr)
 	return nil

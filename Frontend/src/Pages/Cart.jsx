@@ -22,17 +22,25 @@ const Cart = () => {
     toast.error(`${productName} removed from cart`);
   };
 
-  const handleIncreaseQuantity = (productId, productName) => {
-    increaseQuantity(productId);
-    toast.info(`Increased quantity of ${productName}`);
+  const handleIncreaseQuantity = async (productId, productName) => {
+    try {
+      await increaseQuantity(productId);
+      toast.info(`Increased quantity of ${productName}`);
+    } catch (error) {
+      toast.error(error.message || "Out of stock");
+    }
   };
 
-  const handleDecreaseQuantity = (productId, productName, quantity) => {
+  const handleDecreaseQuantity = async (productId, productName, quantity) => {
     if (quantity === 1) {
       handleRemoveItem(productId, productName);
     } else {
-      decreaseQuantity(productId);
-      toast.info(`Decreased quantity of ${productName}`);
+      try {
+        await decreaseQuantity(productId);
+        toast.info(`Decreased quantity of ${productName}`);
+      } catch (error) {
+        toast.error(error.message);
+      }
     }
   };
 
