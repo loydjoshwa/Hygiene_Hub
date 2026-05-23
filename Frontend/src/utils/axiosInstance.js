@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Create an Axios instance
 const axiosInstance = axios.create({
-  // Use environment variable for base URL, fallback to json-server for now
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3130',
+  // Use environment variable for base URL, fallback to Go backend for now
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -17,6 +17,12 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
+    // Automatically delete Content-Type if data is FormData so browser sets correct boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
@@ -46,7 +52,16 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    const isAuthRoute = originalRequest.url && (
+      originalRequest.url.includes('/auth/login') ||
+      originalRequest.url.includes('/auth/signup') ||
+      originalRequest.url.includes('/auth/verify') ||
+      originalRequest.url.includes('/auth/resend-otp') ||
+      originalRequest.url.includes('/auth/forgot') ||
+      originalRequest.url.includes('/auth/reset')
+    );
+
+    if (error.response && error.response.status === 401 && !originalRequest._retry && !isAuthRoute) {
       // If we are already refreshing, queue the request
       if (isRefreshing) {
         return new Promise(function(resolve, reject) {

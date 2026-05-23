@@ -5,13 +5,17 @@ import { useAuth } from '../Context/CartContext';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import register_bg from "../assets/register_bg.png";
+import axiosInstance from '../utils/axiosInstance';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [step, setStep] = useState(1); // 1: Login, 2: Forgot Password, 3: Reset Password
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
-  const formik = useFormik({
+  // 1️⃣ Login Form Configuration
+  const loginFormik = useFormik({
     initialValues: {
       email: '',
       password: ''
@@ -26,11 +30,9 @@ const Login = () => {
     }),
     onSubmit: async (values) => {
       setLoading(true);
-
       try {
         const user = await login(values.email, values.password);
         toast.success('Login successful!');
-        
         if (user.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
@@ -39,6 +41,72 @@ const Login = () => {
       } catch (error) {
         console.error('Login error:', error);
         toast.error(error.message || 'Invalid email or password');
+      } finally {
+        setLoading(false);
+      }
+    }
+  });
+
+  // 2️⃣ Forgot Password Form Configuration
+  const forgotFormik = useFormik({
+    initialValues: {
+      email: ''
+    },
+    validationSchema: Yup.object({
+      email: Yup.string()
+        .email('Invalid email format')
+        .required('Email is required')
+    }),
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        const sanitizedEmail = (values.email || "").trim().toLowerCase();
+        await axiosInstance.post("/auth/forgot-password", { email: sanitizedEmail });
+        setUserEmail(sanitizedEmail);
+        toast.success('OTP sent to your email!');
+        setStep(3);
+      } catch (error) {
+        console.error('Forgot password error:', error);
+        toast.error(error.response?.data?.error || 'Failed to send OTP. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  });
+
+  // 3️⃣ Reset Password Form Configuration
+  const resetFormik = useFormik({
+    initialValues: {
+      otp: '',
+      newPassword: '',
+      confirmPassword: ''
+    },
+    validationSchema: Yup.object({
+      otp: Yup.string()
+        .length(5, 'OTP must be exactly 5 digits')
+        .required('OTP is required'),
+      newPassword: Yup.string()
+        .min(6, 'Password must be at least 6 characters')
+        .required('New password is required'),
+      confirmPassword: Yup.string()
+        .oneOf([Yup.ref('newPassword')], 'Passwords must match')
+        .required('Confirm password is required')
+    }),
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        await axiosInstance.post("/auth/reset-password", {
+          email: userEmail,
+          otp: values.otp,
+          new_password: values.newPassword,
+          confirm_password: values.confirmPassword
+        });
+        toast.success('Password reset successful! Please login with your new password.');
+        resetFormik.resetForm();
+        setStep(1);
+      } catch (error) {
+        console.error('Reset password error:', error);
+        toast.error(error.response?.data?.error || 'Password reset failed. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -70,70 +138,236 @@ const Login = () => {
 
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-2xl text-white">🔐</span>
+            <span className="text-2xl text-white">
+              {step === 1 ? '🔐' : step === 2 ? '🔑' : '🔄'}
+            </span>
           </div>
-          <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">Welcome Back</h2>
-          <p className="text-gray-300 text-sm">Sign in to your account</p>
+          <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+            {step === 1 ? 'Welcome Back' : step === 2 ? 'Forgot Password' : 'Reset Password'}
+          </h2>
+          <p className="text-gray-300 text-sm">
+            {step === 1 
+              ? 'Sign in to your account' 
+              : step === 2 
+                ? 'Enter email to receive reset code' 
+                : `Enter OTP sent to ${userEmail}`}
+          </p>
         </div>
 
-        <form onSubmit={formik.handleSubmit} className="space-y-6">
-          <div className="space-y-4">
+        {/* 💻 STEP 1: Login Form */}
+        {step === 1 && (
+          <form onSubmit={loginFormik.handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+                  onBlur={loginFormik.handleBlur}
+                  onChange={loginFormik.handleChange}
+                  value={loginFormik.values.email}
+                />
+                {loginFormik.touched.email && loginFormik.errors.email && (
+                  <span className="text-red-300 text-sm mt-1">
+                    {loginFormik.errors.email}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+                  onBlur={loginFormik.handleBlur}
+                  onChange={loginFormik.handleChange}
+                  value={loginFormik.values.password}
+                />
+                {loginFormik.touched.password && loginFormik.errors.password && (
+                  <span className="text-red-300 text-sm mt-1">
+                    {loginFormik.errors.password}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="text-sm text-green-300 hover:text-green-200 hover:underline transition-colors duration-200"
+              >
+                Forgot Password?
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* 💻 STEP 2: Forgot Password Form */}
+        {step === 2 && (
+          <form onSubmit={forgotFormik.handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-200 mb-2">
-                Email Address
+                Registered Email Address
               </label>
               <input
                 type="email"
                 name="email"
                 placeholder="Enter your email"
                 className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.email}
+                onBlur={forgotFormik.handleBlur}
+                onChange={forgotFormik.handleChange}
+                value={forgotFormik.values.email}
               />
-              {formik.touched.email && formik.errors.email && (
+              {forgotFormik.touched.email && forgotFormik.errors.email && (
                 <span className="text-red-300 text-sm mt-1">
-                  {formik.errors.email}
+                  {forgotFormik.errors.email}
                 </span>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="Enter your password"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.password}
-              />
-              {formik.touched.password && formik.errors.password && (
-                <span className="text-red-300 text-sm mt-1">
-                  {formik.errors.password}
-                </span>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Sending OTP...
+                </>
+              ) : (
+                'Send OTP'
               )}
-            </div>
-          </div>
+            </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Signing in...
-              </>
-            ) : (
-              'Sign In'
-            )}
-          </button>
-        </form>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="text-sm text-green-300 hover:text-green-200 hover:underline transition-colors duration-200"
+              >
+                Back to Login
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 💻 STEP 3: Reset Password Form */}
+        {step === 3 && (
+          <form onSubmit={resetFormik.handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  Enter 5-digit OTP
+                </label>
+                <input
+                  type="text"
+                  name="otp"
+                  maxLength="5"
+                  placeholder="12345"
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15 text-center tracking-[0.5em] text-xl"
+                  onBlur={resetFormik.handleBlur}
+                  onChange={resetFormik.handleChange}
+                  value={resetFormik.values.otp}
+                />
+                {resetFormik.touched.otp && resetFormik.errors.otp && (
+                  <span className="text-red-300 text-sm mt-1">
+                    {resetFormik.errors.otp}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  placeholder="Enter new password"
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+                  onBlur={resetFormik.handleBlur}
+                  onChange={resetFormik.handleChange}
+                  value={resetFormik.values.newPassword}
+                />
+                {resetFormik.touched.newPassword && resetFormik.errors.newPassword && (
+                  <span className="text-red-300 text-sm mt-1">
+                    {resetFormik.errors.newPassword}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm new password"
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+                  onBlur={resetFormik.handleBlur}
+                  onChange={resetFormik.handleChange}
+                  value={resetFormik.values.confirmPassword}
+                />
+                {resetFormik.touched.confirmPassword && resetFormik.errors.confirmPassword && (
+                  <span className="text-red-300 text-sm mt-1">
+                    {resetFormik.errors.confirmPassword}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Resetting Password...
+                </>
+              ) : (
+                'Reset Password'
+              )}
+            </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="text-sm text-green-300 hover:text-green-200 hover:underline transition-colors duration-200"
+              >
+                Back to Login
+              </button>
+            </div>
+          </form>
+        )}
 
         <div className="mt-8 pt-6 border-t border-white/10">
           <p className="text-center text-gray-300">

@@ -2,7 +2,7 @@ import React from 'react';
 import Register from './Pages/Register';
 import "./App.css";
 import { ToastContainer } from 'react-toastify';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Login from './Pages/Login';
 import Home from './Pages/Home';
 import Products from './Pages/Products';
@@ -10,7 +10,7 @@ import About from './Pages/About';
 import Contact from './Pages/Contact';
 import Cart from './Pages/Cart';
 import Wishlist from './Pages/Wishlist';
-import { CartProvider } from './Context/CartContext';
+import { CartProvider, useAuth } from './Context/CartContext';
 import Payment from './Pages/Payment';
 
 import ProtectedRoute from './Routes/ProtectedRoute';
@@ -29,10 +29,28 @@ import ManageUsers from './Admin/ManageUsers';
 
 
 
+const RoleBasedRedirector = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const storedUserStr = localStorage.getItem("currentUser");
+    const storedUser = storedUserStr ? JSON.parse(storedUserStr) : null;
+    const role = currentUser?.role || storedUser?.role;
+
+    if (role === 'admin' && !location.pathname.startsWith('/admin')) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [currentUser, location.pathname, navigate]);
+
+  return null;
+};
+
 const App = () => {
   return (
     <CartProvider>
-      
+      <RoleBasedRedirector />
       <Routes>
   <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
   <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />

@@ -6,17 +6,26 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useAuth } from "../Context/CartContext";   
+import { useAuth } from "../Context/CartContext";
+import axiosInstance from '../utils/axiosInstance';
+
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const Payment = () => {
   const navigate = useNavigate();
-  const { cartItems, getTotalPrice, clearCart, createOrder } = useCart();
-  const { currentUser,isSessionActive,validateUser } = useAuth();
-
+  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const { currentUser, isSessionActive, validateUser } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('card'); 
 
-  const cardValidationSchema = Yup.object({
+  const validationSchema = Yup.object({
     fullName: Yup.string().required("Full Name is required"),
     phone: Yup.string()
       .matches(/^\d{10}$/, "Phone number must be 10 digits")
@@ -26,34 +35,7 @@ const Payment = () => {
     pincode: Yup.string()
       .matches(/^\d{6}$/, "Pincode must be 6 digits")
       .required("Pincode is required"),
-    cardNumber: Yup.string()
-      .matches(/^\d{16}$/, "Card number must be 16 digits")
-      .required("Card number is required"),
-    cardName: Yup.string().required("Cardholder name is required"),
-    expiryDate: Yup.string()
-      .matches(/^\d{2}\/\d{2}$/, "Expiry must be MM/YY format")
-      .required("Expiry date is required"),
-    cvv: Yup.string()
-      .matches(/^\d{3}$/, "CVV must be 3 digits")
-      .required("CVV is required"),
   });
-
-  const upiValidationSchema = Yup.object({
-    fullName: Yup.string().required("Full Name is required"),
-    phone: Yup.string()
-      .matches(/^\d{10}$/, "Phone number must be 10 digits")
-      .required("Phone number is required"),
-    address: Yup.string().required("Address is required"),
-    state: Yup.string().required("State is required"),
-    pincode: Yup.string()
-      .matches(/^\d{6}$/, "Pincode must be 6 digits")
-      .required("Pincode is required"),
-    upiId: Yup.string()
-      .matches(/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/, "Enter valid UPI ID (e.g., username@upi)")
-      .required("UPI ID is required"),
-  });
-
-  const validationSchema = paymentMethod === 'card' ? cardValidationSchema : upiValidationSchema;
 
   const formik = useFormik({
     initialValues: {
@@ -62,38 +44,38 @@ const Payment = () => {
       address: "",
       state: "",
       pincode: "",
-      cardNumber: "",
-      cardName: "",
-      expiryDate: "",
-      cvv: "",
-      upiId: "",
     },
-
     validationSchema: validationSchema,
-    
     onSubmit: async (values) => {
-
       const isValid = await validateUser();
-if (!isValid) {
-  toast.error("Account blocked or session expired");
-  navigate("/login");
-  return;
-}
-
-     
-
-      if (!currentUser || !isSessionActive()) {
-        toast.error("User not logged in");
-        console.log("user not logged in")
+      if (!isValid) {
+        toast.error("Account blocked or session expired");
         navigate("/login");
         return;
       }
 
+      if (!currentUser || !isSessionActive()) {
+        toast.error("User not logged in");
+        navigate("/login");
+        return;
+      }
+
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast.error("Failed to load Razorpay SDK. Check your internet connection.");
+        return;
+      }
+
       setLoading(true);
-      
+
       try {
+        // 1. Create a Razorpay Order on the backend
+        const { data: orderResponse } = await axiosInstance.post("/user/payments/order", {
+          amount: finalTotal,
+        });
+
+        // 2. Prepare order details for verification saving
         const orderData = {
-          // eslint-disable-next-line react-hooks/purity
           orderId: `ORD${Date.now().toString().slice(-6)}`,
           userId: currentUser?.id || 'guest',
           userName: values.fullName,
@@ -104,14 +86,7 @@ if (!isValid) {
             state: values.state,
             pincode: values.pincode
           },
-          paymentMethod: paymentMethod,
-          paymentDetails: paymentMethod === 'card' ? {
-            cardLastFour: values.cardNumber.slice(-4),
-            cardName: values.cardName
-          } : {
-            upiId: values.upiId,
-            status: 'pending'
-          },
+          paymentMethod: "razorpay",
           items: cartItems.map(item => ({
             productId: item.productId,
             name: item.name,
@@ -126,25 +101,55 @@ if (!isValid) {
           status: 'processing'
         };
 
-        await createOrder(orderData);
-        await clearCart();
+        // 3. Configure Razorpay modal
+        const options = {
+          key: orderResponse.key_id,
+          amount: orderResponse.amount,
+          currency: "INR",
+          name: "HygieneHub",
+          description: "Complete your premium hygiene purchase",
+          order_id: orderResponse.razorpay_order_id,
+          handler: async function (response) {
+            try {
+              // 4. Send transaction details for local verification and saving
+              await axiosInstance.post("/user/payments/verify", {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                client_order_details: orderData
+              });
 
-        toast.success(
-          <div>
-            <div className="font-bold"> Order Placed Successfully!</div>
-            <div>Payment via {paymentMethod === 'card' ? 'Credit/Debit Card' : 'UPI'} initiated</div>
-          </div>,
-          {
-            autoClose: 4000,
-            position: "top-center"
+              await clearCart();
+              toast.success("Payment Successful! Order Placed.");
+              setLoading(false);
+              navigate("/myorders");
+            } catch (err) {
+              console.error("Verification error:", err);
+              toast.error("Payment verification failed. Please contact support.");
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: values.fullName,
+            email: currentUser?.email || "",
+            contact: values.phone,
+          },
+          theme: {
+            color: "#16a34a", // beautiful theme green matching branding
+          },
+          modal: {
+            ondismiss: function () {
+              setLoading(false);
+              toast.info("Payment cancelled.");
+            }
           }
-        );
+        };
 
-        setLoading(false);
-        setTimeout(() => navigate("/"), 1000);
+        const rzp = new window.Razorpay(options);
+        rzp.open();
       } catch (error) {
         console.error('Order failed:', error);
-        toast.error(`Failed to process ${paymentMethod === 'card' ? 'card' : 'UPI'} payment. Please try again.`);
+        toast.error("Failed to process payment. Please try again.");
         setLoading(false);
       }
     },
@@ -153,262 +158,169 @@ if (!isValid) {
   const shippingCost = cartItems.length > 0 ? 40 : 0;
   const finalTotal = getTotalPrice() + shippingCost;
 
-  const handlePaymentMethodChange = (method) => {
-    setPaymentMethod(method);
-    formik.setErrors({});
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
       <div className="pt-20 pb-16 max-w-6xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center">Complete Your Order</h1>
+        <h1 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Complete Your Order</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-3">
-            <div className="bg-white p-6 rounded-lg shadow mb-6">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-6">
+              <h2 className="text-xl font-bold mb-4 text-gray-800">Order Summary</h2>
 
               {cartItems.map(item => (
-                <div key={item.id} className="flex justify-between py-3 border-b">
+                <div key={item.id} className="flex justify-between py-3 border-b border-gray-100">
                   <div className="flex gap-3">
-                    <img src={item.image} alt="" className="w-12 h-12 bg-gray-100 rounded" />
+                    <img src={item.image} alt="" className="w-12 h-12 bg-gray-50 object-contain rounded-xl border border-gray-100" />
                     <div>
-                      <p className="font-medium">{item.name}</p>
+                      <p className="font-semibold text-gray-800">{item.name}</p>
                       <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                     </div>
                   </div>
-                  <span className="font-medium">₹{item.price * item.quantity}</span>
+                  <span className="font-bold text-gray-800">₹{item.price * item.quantity}</span>
                 </div>
               ))}
 
-              <div className="mt-4">
-                <div className="flex justify-between">
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
                   <span>₹{getTotalPrice()}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
                   <span>₹{shippingCost}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg pt-2 border-t mt-2">
-                  <span>Total Amount</span>
+                <div className="flex justify-between font-bold text-lg pt-4 border-t border-gray-100 mt-2">
+                  <span className="text-gray-800">Total Amount</span>
                   <span className="text-green-600">₹{finalTotal}</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
               <form onSubmit={formik.handleSubmit}>
-                <h2 className="text-xl font-bold mb-4">Delivery Address</h2>
+                <h2 className="text-xl font-bold mb-4 text-gray-800">Delivery Address</h2>
 
-                <label>Full Name *</label>
-                <input
-                  name="fullName"
-                  value={formik.values.fullName}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="input-field"
-                  placeholder="Enter full name"
-                />
-                {formik.touched.fullName && formik.errors.fullName && (
-                  <p className="text-red-600 text-sm">{formik.errors.fullName}</p>
-                )}
-
-                <label className="mt-4 block">Phone Number *</label>
-                <input
-                  name="phone"
-                  maxLength="10"
-                  value={formik.values.phone}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 10);
-                    formik.setFieldValue("phone", v);
-                  }}
-                  onBlur={formik.handleBlur}
-                  className="input-field"
-                  placeholder="10 digit phone"
-                />
-                {formik.touched.phone && formik.errors.phone && (
-                  <p className="text-red-600 text-sm">{formik.errors.phone}</p>
-                )}
-
-                <label className="mt-4 block">Full Address *</label>
-                <textarea
-                  name="address"
-                  rows="3"
-                  value={formik.values.address}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="input-field"
-                  placeholder="House, Street, Area"
-                />
-                {formik.touched.address && formik.errors.address && (
-                  <p className="text-red-600 text-sm">{formik.errors.address}</p>
-                )}
-
-                <label className="mt-4 block">State *</label>
-                <input
-                  name="state"
-                  value={formik.values.state}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="input-field"
-                  placeholder="State"
-                />
-                {formik.touched.state && formik.errors.state && (
-                  <p className="text-red-600 text-sm">{formik.errors.state}</p>
-                )}
-
-                <label className="mt-4 block">Pincode *</label>
-                <input
-                  name="pincode"
-                  maxLength="6"
-                  value={formik.values.pincode}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 6);
-                    formik.setFieldValue("pincode", v);
-                  }}
-                  onBlur={formik.handleBlur}
-                  className="input-field"
-                  placeholder="6 digit pincode"
-                />
-                {formik.touched.pincode && formik.errors.pincode && (
-                  <p className="text-red-600 text-sm">{formik.errors.pincode}</p>
-                )}
-
-                <h2 className="text-xl font-bold mt-8 mb-4">Payment Method</h2>
-                
-                <div className="flex gap-4 mb-6">
-                  <button
-                    type="button"
-                    onClick={() => handlePaymentMethodChange('card')}
-                    className={`px-4 py-2 rounded-lg border ${paymentMethod === 'card' ? 'border-green-600 bg-green-50 text-green-700' : 'border-gray-300'}`}
-                  >
-                    Credit/Debit Card
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handlePaymentMethodChange('upi')}
-                    className={`px-4 py-2 rounded-lg border ${paymentMethod === 'upi' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300'}`}
-                  >
-                    UPI
-                  </button>
-                </div>
-
-                {paymentMethod === 'card' ? (
-                  <>
-                    <h3 className="text-lg font-bold mb-4">Card Payment Details</h3>
-
-                    <label>Card Number *</label>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block mb-1 font-medium text-gray-700">Full Name *</label>
                     <input
-                      name="cardNumber"
-                      maxLength="16"
-                      value={formik.values.cardNumber}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, "").slice(0, 16);
-                        formik.setFieldValue("cardNumber", v);
-                      }}
-                      onBlur={formik.handleBlur}
-                      className="input-field"
-                      placeholder="16 digit card number"
-                    />
-                    {formik.touched.cardNumber && formik.errors.cardNumber && (
-                      <p className="text-red-600 text-sm">{formik.errors.cardNumber}</p>
-                    )}
-
-                    <label className="mt-4 block">Cardholder Name *</label>
-                    <input
-                      name="cardName"
-                      value={formik.values.cardName}
+                      name="fullName"
+                      value={formik.values.fullName}
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
-                      className="input-field"
-                      placeholder="Name on card"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Enter full name"
                     />
-                    {formik.touched.cardName && formik.errors.cardName && (
-                      <p className="text-red-600 text-sm">{formik.errors.cardName}</p>
+                    {formik.touched.fullName && formik.errors.fullName && (
+                      <p className="text-red-500 text-sm mt-1">{formik.errors.fullName}</p>
                     )}
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="mt-4 block">Expiry Date (MM/YY) *</label>
-                        <input
-                          name="expiryDate"
-                          maxLength="5"
-                          value={formik.values.expiryDate}
-                          onChange={(e) => {
-                            let v = e.target.value.replace(/\D/g, "");
-                            if (v.length >= 3) v = v.slice(0, 2) + "/" + v.slice(2, 4);
-                            formik.setFieldValue("expiryDate", v);
-                          }}
-                          onBlur={formik.handleBlur}
-                          className="input-field"
-                          placeholder="MM/YY"
-                        />
-                        {formik.touched.expiryDate && formik.errors.expiryDate && (
-                          <p className="text-red-600 text-sm">{formik.errors.expiryDate}</p>
-                        )}
-                      </div>
+                  <div>
+                    <label className="block mb-1 font-medium text-gray-700">Phone Number *</label>
+                    <input
+                      name="phone"
+                      maxLength="10"
+                      value={formik.values.phone}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        formik.setFieldValue("phone", v);
+                      }}
+                      onBlur={formik.handleBlur}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="10 digit phone number"
+                    />
+                    {formik.touched.phone && formik.errors.phone && (
+                      <p className="text-red-500 text-sm mt-1">{formik.errors.phone}</p>
+                    )}
+                  </div>
 
-                      <div>
-                        <label className="mt-4 block">CVV *</label>
-                        <input
-                          name="cvv"
-                          maxLength="3"
-                          value={formik.values.cvv}
-                          onChange={(e) => {
-                            const v = e.target.value.replace(/\D/g, "").slice(0, 3);
-                            formik.setFieldValue("cvv", v);
-                          }}
-                          onBlur={formik.handleBlur}
-                          className="input-field"
-                          placeholder="123"
-                        />
-                        {formik.touched.cvv && formik.errors.cvv && (
-                          <p className="text-red-600 text-sm">{formik.errors.cvv}</p>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-bold mb-4">UPI Payment Details</h3>
-                    
-                    <div className="mb-4">
-                      <label className="block mb-2">Enter UPI ID *</label>
+                  <div>
+                    <label className="block mb-1 font-medium text-gray-700">Full Address *</label>
+                    <textarea
+                      name="address"
+                      rows="3"
+                      value={formik.values.address}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="House/Apartment, Street, Area"
+                    />
+                    {formik.touched.address && formik.errors.address && (
+                      <p className="text-red-500 text-sm mt-1">{formik.errors.address}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-1 font-medium text-gray-700">State *</label>
                       <input
-                        name="upiId"
-                        value={formik.values.upiId}
+                        name="state"
+                        value={formik.values.state}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        className="input-field"
-                        placeholder="username@upi (e.g., username@oksbi, username@ybl)"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="State"
                       />
-                      {formik.touched.upiId && formik.errors.upiId && (
-                        <p className="text-red-600 text-sm mt-1">{formik.errors.upiId}</p>
+                      {formik.touched.state && formik.errors.state && (
+                        <p className="text-red-500 text-sm mt-1">{formik.errors.state}</p>
                       )}
                     </div>
-                  </>
-                )}
 
-                <div className="flex gap-4 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/cart")}
-                    className="border border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50"
-                  >
-                    Back to Cart
-                  </button>
+                    <div>
+                      <label className="block mb-1 font-medium text-gray-700">Pincode *</label>
+                      <input
+                        name="pincode"
+                        maxLength="6"
+                        value={formik.values.pincode}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+                          formik.setFieldValue("pincode", v);
+                        }}
+                        onBlur={formik.handleBlur}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="6 digit pincode"
+                      />
+                      {formik.touched.pincode && formik.errors.pincode && (
+                        <p className="text-red-500 text-sm mt-1">{formik.errors.pincode}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`flex-1 px-6 py-3 rounded-lg ${loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white`}
-                  >
-                    {loading ? "Processing..." : `Pay ₹${finalTotal}`}
-                  </button>
+                <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-100">
+                    <span className="text-xl">🛡️</span>
+                    <span className="text-sm">Secure Payment processed via **Razorpay**</span>
+                  </div>
+
+                  <div className="flex gap-4 w-full md:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => navigate("/cart")}
+                      className="px-6 py-3 border border-green-600 text-green-600 font-semibold rounded-xl hover:bg-green-50 transition"
+                    >
+                      Back to Cart
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={`flex-grow md:flex-none px-8 py-3 rounded-xl font-semibold bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition disabled:opacity-50 flex items-center justify-center gap-2`}
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        `Pay Securely ₹${finalTotal}`
+                      )}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

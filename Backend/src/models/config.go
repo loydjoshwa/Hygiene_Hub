@@ -38,4 +38,9 @@ type Config struct {
 		Host string
 		Port string
 	}
+
+	Razorpay struct {
+		KeyID     string
+		KeySecret string
+	}
 }

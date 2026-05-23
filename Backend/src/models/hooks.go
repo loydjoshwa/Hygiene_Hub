@@ -1,6 +1,8 @@
 package models
 
 import (
+	"strings"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -41,6 +43,17 @@ func (ci *CartItem) BeforeCreate(tx *gorm.DB) error {
 func (w *Wishlist) BeforeCreate(tx *gorm.DB) error {
 	if w.ID == uuid.Nil {
 		w.ID = uuid.New()
+	}
+	return nil
+}
+
+// BeforeCreate hook for Category model
+func (c *Category) BeforeCreate(tx *gorm.DB) error {
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+	if c.Slug == "" {
+		c.Slug = strings.ToLower(strings.ReplaceAll(c.Name, " ", "-"))
 	}
 	return nil
 }

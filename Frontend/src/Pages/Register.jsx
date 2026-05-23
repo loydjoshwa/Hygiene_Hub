@@ -22,6 +22,9 @@ const Register = () => {
       .required("Please enter email"),
     password: Yup.string()
       .min(6, "Password must be at least 6 characters")
+      .max(20, "Password must be at most 20 characters")
+      .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .matches(/[a-z]/, "Password must contain at least one lowercase letter")
       .required("Please enter password"),
     cpassword: Yup.string()
       .oneOf([Yup.ref("password")], "Passwords do not match")
@@ -45,14 +48,15 @@ const Register = () => {
     onSubmit: async (values) => {
       setLoading(true);
       try {
+        const sanitizedEmail = (values.email || "").trim().toLowerCase();
         await axiosInstance.post("/auth/signup", {
           name: values.username,
-          email: values.email,
+          email: sanitizedEmail,
           password: values.password,
           confirmpassword: values.cpassword
         });
         
-        setUserEmail(values.email);
+        setUserEmail(sanitizedEmail);
         setStep(2);
         toast.success("OTP sent to your email!");
       } catch (err) {

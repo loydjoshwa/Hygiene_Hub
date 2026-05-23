@@ -62,6 +62,10 @@ func LoadConfig() *models.Config {
 	cfg.Redis.Host = getEnv("REDIS_HOST", "127.0.0.1")
 	cfg.Redis.Port = getEnv("REDIS_PORT", "6379")
 
+	// ================= RAZORPAY =================
+	cfg.Razorpay.KeyID = getEnv("RAZORPAY_KEY_ID", "")
+	cfg.Razorpay.KeySecret = getEnv("RAZORPAY_KEY_SECRET", "")
+
 	return cfg
 }
 

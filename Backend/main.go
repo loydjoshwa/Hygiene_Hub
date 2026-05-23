@@ -79,7 +79,7 @@ func main() {
 	uploadController := controllers.NewUploadController()
 	userController := controllers.NewUserController(userService)
 	adminController := controllers.NewAdminController(adminService)
-	orderController := controllers.NewOrderController(repo, db)
+	orderController := controllers.NewOrderController(repo, db, cfg)
 
 	// Fiber app
 	app := fiber.New()

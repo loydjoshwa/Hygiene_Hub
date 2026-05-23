@@ -98,7 +98,15 @@ func (r *Redis) Get(ctx context.Context, key string) (string, error) {
 		}
 		return item.value, nil
 	}
-	return r.client.Get(ctx, key).Result()
+	val, err := r.client.Get(ctx, key).Result()
+	if err != nil && err != redis.Nil {
+		log.Printf("WARNING: Redis connection failed dynamically during GET (%v). Switching to in-memory cache.", err)
+		r.mu.Lock()
+		r.useInMemory = true
+		r.mu.Unlock()
+		return r.Get(ctx, key)
+	}
+	return val, err
 }
 
 // Set sets a value in cache with expiration
@@ -127,7 +135,15 @@ func (r *Redis) Set(ctx context.Context, key string, value interface{}, expirati
 		r.mu.Unlock()
 		return nil
 	}
-	return r.client.Set(ctx, key, value, expiration).Err()
+	err := r.client.Set(ctx, key, value, expiration).Err()
+	if err != nil {
+		log.Printf("WARNING: Redis connection failed dynamically during SET (%v). Switching to in-memory cache.", err)
+		r.mu.Lock()
+		r.useInMemory = true
+		r.mu.Unlock()
+		return r.Set(ctx, key, value, expiration)
+	}
+	return nil
 }
 
 // Del deletes keys from cache
@@ -140,5 +156,13 @@ func (r *Redis) Del(ctx context.Context, keys ...string) error {
 		r.mu.Unlock()
 		return nil
 	}
-	return r.client.Del(ctx, keys...).Err()
+	err := r.client.Del(ctx, keys...).Err()
+	if err != nil {
+		log.Printf("WARNING: Redis connection failed dynamically during DEL (%v). Switching to in-memory cache.", err)
+		r.mu.Lock()
+		r.useInMemory = true
+		r.mu.Unlock()
+		return r.Del(ctx, keys...)
+	}
+	return nil
 }

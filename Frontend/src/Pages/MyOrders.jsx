@@ -37,13 +37,26 @@ const MyOrders = () => {
               </div>
 
               <div className="border-t pt-2">
-                <h3 className="font-semibold mb-2">Items:</h3>
-                {order.items.map((item, index) => (
-                  <div key={index} className="flex justify-between border-b py-2">
-                    <span>{item.name} ({item.quantity})</span>
-                    <span>₹{item.price * item.quantity}</span>
-                  </div>
-                ))}
+                <h3 className="font-semibold mb-4 text-gray-700">Items:</h3>
+                <div className="space-y-3">
+                  {order.items.map((item, index) => (
+                    <div key={index} className="flex items-center gap-4 border-b pb-3 last:border-b-0 last:pb-0">
+                      <img 
+                        src={item.image || 'https://via.placeholder.com/64'} 
+                        alt={item.name} 
+                        className="w-16 h-16 object-contain bg-gray-50 rounded-lg border border-gray-150 p-1 flex-shrink-0"
+                      />
+                      <div className="flex-grow">
+                        <p className="font-semibold text-gray-800">{item.name}</p>
+                        <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-800">₹{item.price * item.quantity}</p>
+                        <p className="text-xs text-gray-400">₹{item.price} each</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="text-right mt-3 font-bold text-lg">

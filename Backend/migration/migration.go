@@ -82,6 +82,16 @@ func Migrate(db *gorm.DB) {
 		}
 	}
 
+	// 2.5. Drop the obsolete 'category' column if it exists in products database table
+	if db.Migrator().HasTable("products") && db.Migrator().HasColumn(&models.Product{}, "category") {
+		log.Println("Dropping obsolete category column from products table...")
+		if err := db.Migrator().DropColumn(&models.Product{}, "category"); err != nil {
+			log.Println("Warning: failed to drop obsolete category column:", err)
+		} else {
+			log.Println("Successfully dropped obsolete category column!")
+		}
+	}
+
 	// 3. Run AutoMigrate for other models
 	err = db.AutoMigrate(
 		&models.User{},

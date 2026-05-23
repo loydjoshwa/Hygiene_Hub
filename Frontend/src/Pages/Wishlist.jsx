@@ -8,7 +8,7 @@ import { useAuth, useCart } from '../Context/CartContext';
 const Wishlist = () => {
   const navigate=useNavigate()
   const { wishlistItems, removeFromWishlist, currentUser, isSessionActive} = useAuth();
-  const { moveToCart } = useCart();
+  const { moveToCart, getQuantity } = useCart();
 
   const handleRemoveFromWishlist = (productId, productName) => {
       if (!currentUser|| !isSessionActive()) {
@@ -139,17 +139,23 @@ const Wishlist = () => {
                       </div>
 
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAddToCart(item)}
-                          disabled={!item.in_stock || item.stock <= 0}
-                          className={`flex-1 py-2 px-4 rounded-lg transition-colors duration-300 font-medium ${
-                            !item.in_stock || item.stock <= 0
-                              ? 'bg-slate-400 cursor-not-allowed text-white'
-                              : 'bg-green-500 text-white hover:bg-green-600'
-                          }`}
-                        >
-                          {!item.in_stock || item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-                        </button>
+                        {(() => {
+                          const quantityInCart = getQuantity(item.productId);
+                          const isOutOfStock = !item.in_stock || item.stock <= 0 || (item.stock - quantityInCart <= 0);
+                          return (
+                            <button
+                              onClick={() => handleAddToCart(item)}
+                              disabled={isOutOfStock}
+                              className={`flex-1 py-2 px-4 rounded-lg transition-colors duration-300 font-medium ${
+                                isOutOfStock
+                                  ? 'bg-slate-400 cursor-not-allowed text-white'
+                                  : 'bg-green-500 text-white hover:bg-green-600'
+                              }`}
+                            >
+                              {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                            </button>
+                          );
+                        })()}
                         <button
                           onClick={() => handleRemoveFromWishlist(item.productId, item.name)}
                           className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-300"

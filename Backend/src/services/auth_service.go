@@ -11,6 +11,7 @@ import (
 	"hygienehub/utils/logger"
 	"hygienehub/utils/otp"
 	"hygienehub/utils/password"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -91,6 +92,7 @@ func (s *AuthService) handleOTPGeneration(emailStr string, isPasswordReset bool)
 //signup
 
 func (s *AuthService) Signup(name, emailStr, passwordStr string) error {
+	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 
 	var existing models.User
 	_, err := s.repo.FindOneWhere(&existing, "email = ?", emailStr)
@@ -132,6 +134,7 @@ func (s *AuthService) Signup(name, emailStr, passwordStr string) error {
 //resend otp
 
 func (s *AuthService) ResendOTP(emailStr string) error {
+	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 
 	// check if user exists in Postgres
 	var user models.User
@@ -149,6 +152,7 @@ func (s *AuthService) ResendOTP(emailStr string) error {
 //verify otp
 
 func (s *AuthService) VerifyOTP(emailStr, otpCode string) error {
+	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 
 	var user models.User
 	_, err := s.repo.FindOneWhere(&user, "email = ?", emailStr)
@@ -195,12 +199,13 @@ func (s *AuthService) VerifyOTP(emailStr, otpCode string) error {
 //login
 
 func (s *AuthService) Login(emailStr, passwordStr string) (string, string, *models.User, error) {
+	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 
 	var user models.User
 
 	_, err := s.repo.FindOneWhere(&user, "email = ?", emailStr)
 	if err != nil {
-		return "", "", nil, errors.New("invalid credentials")
+		return "", "", nil, errors.New("email not registered")
 	}
 
 	if !user.IsVerified {
@@ -212,7 +217,7 @@ func (s *AuthService) Login(emailStr, passwordStr string) (string, string, *mode
 	}
 
 	if !password.ComparePassword(user.Password, passwordStr) {
-		return "", "", nil, errors.New("invalid credentials")
+		return "", "", nil, errors.New("incorrect password")
 	}
 
 	// generate session id
@@ -349,6 +354,7 @@ func (s *AuthService) GetUserByID(userID string) (*models.User, error) {
 
 // forgot password
 func (s *AuthService) ForgotPassword(emailStr string) error {
+	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 	var user models.User
 	_, err := s.repo.FindOneWhere(&user, "email = ?", emailStr)
 	if err != nil {
@@ -364,6 +370,7 @@ func (s *AuthService) ForgotPassword(emailStr string) error {
 
 // reset password
 func (s *AuthService) ResetPassword(emailStr, otpCode, newPasswordStr string) error {
+	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 	var user models.User
 	_, err := s.repo.FindOneWhere(&user, "email = ?", emailStr)
 	if err != nil {

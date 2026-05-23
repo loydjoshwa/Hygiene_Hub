@@ -53,7 +53,10 @@ export const CartProvider = ({ children }) => {
         userId: item.user_id,
         stock: item.product?.stock || 0,
         in_stock: item.product?.in_stock !== undefined ? item.product?.in_stock : true,
+        createdAt: item.created_at || item.createdAt || "",
       }));
+      // Sort stably by creation time to prevent UI reshuffling when updated
+      mappedItems.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       setCartItems(mappedItems);
     } catch (err) {
       console.error("Error fetching cart:", err);
@@ -92,8 +95,9 @@ export const CartProvider = ({ children }) => {
   }, [currentUser, fetchUserCartItems, fetchUserWishlistItems]);
 
   const login = async (email, password) => {
+    const sanitizedEmail = (email || "").trim().toLowerCase();
     try {
-      const res = await axiosInstance.post("/auth/login", { email, password });
+      const res = await axiosInstance.post("/auth/login", { email: sanitizedEmail, password });
       const { access_token, refresh_token } = res.data;
       
       localStorage.setItem("access_token", access_token);
@@ -103,10 +107,10 @@ export const CartProvider = ({ children }) => {
       const profile = profileRes.data;
       
       const userObj = {
-        id: profile.id,
+        id: profile.user_id || profile.id,
         name: profile.name,
         role: profile.role,
-        email: email
+        email: sanitizedEmail
       };
       
       localStorage.setItem("currentUser", JSON.stringify(userObj));
@@ -300,14 +304,6 @@ export const CartProvider = ({ children }) => {
 
   const getWishlistCount = () => wishlistItems.length;
 
-  const createOrder = async (orderData) => {
-    if (!(await validateUser())) {
-      throw new Error("User blocked or logged out");
-    }
-    const { data } = await axiosInstance.post("/user/orders", orderData);
-    return data;
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -336,7 +332,6 @@ export const CartProvider = ({ children }) => {
           getTotalItems,
           getTotalPrice,
           clearCart,
-          createOrder,
         }}
       >
         {children}

@@ -1,16 +1,17 @@
 import { Navigate } from "react-router-dom";
+import { useAuth } from "../Context/CartContext";
 
 const AdminProtectedRoute = ({ children }) => {
-  const adminLogged = localStorage.getItem("adminLogged") === "true";
-  const adminEmail = localStorage.getItem("adminEmail");
+  const { currentUser } = useAuth();
+  
+  const storedUserStr = localStorage.getItem("currentUser");
+  const storedUser = storedUserStr ? JSON.parse(storedUserStr) : null;
+  const role = currentUser?.role || storedUser?.role;
   const token = localStorage.getItem("access_token");
 
-  // Temporarily allow if either (adminLogged && adminEmail) OR a valid token is present.
-  // TODO: Once the Go backend is fully integrated, strictly require 'token'.
-  const isAuthorized = (adminLogged && adminEmail) || token;
+  const isAuthorized = role === "admin" && token;
 
   if (!isAuthorized) {
-    localStorage.clear();
     return <Navigate to="/login" replace />;
   }
   return children;

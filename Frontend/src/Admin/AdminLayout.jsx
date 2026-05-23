@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useAuth } from "../Context/CartContext";
 import {
   LayoutDashboard,
   Package,
@@ -16,11 +17,15 @@ import {
 const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminLogged");
-    localStorage.removeItem("adminEmail");
-    toast.success("Logged out successfully!");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully!");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
     window.location.href = "/login";
   };
 

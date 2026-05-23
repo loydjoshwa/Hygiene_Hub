@@ -52,8 +52,10 @@ func (r *cartRepository) GetOrCreateCart(userID string) (*models.Cart, error) {
 // GetCartWithItems fetches the cart along with all its items and the associated products
 func (r *cartRepository) GetCartWithItems(userID string) (*models.Cart, error) {
 	var cart models.Cart
-	// Preload the nested associations: Items, and Product inside Items
-	err := r.db.Preload("Items").Preload("Items.Product").Where("user_id = ?", userID).First(&cart).Error
+	// Preload the nested associations: Items, and Product inside Items, ordered by creation time
+	err := r.db.Preload("Items", func(db *gorm.DB) *gorm.DB {
+		return db.Order("cart_items.created_at ASC")
+	}).Preload("Items.Product").Where("user_id = ?", userID).First(&cart).Error
 	return &cart, err
 }
 
