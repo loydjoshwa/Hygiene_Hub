@@ -20,7 +20,12 @@ axiosInstance.interceptors.request.use(
     
     // Automatically delete Content-Type if data is FormData so browser sets correct boundary
     if (config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
+      if (config.headers && typeof config.headers.delete === 'function') {
+        config.headers.delete('Content-Type');
+      } else if (config.headers) {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
     }
     
     return config;

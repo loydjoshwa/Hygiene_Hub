@@ -14,11 +14,13 @@ type CreateProductInput struct {
 }
 
 type UpdateProductInput struct {
-	Title       *string `form:"title" validate:"omitempty,min=2"`
-	Name        *string `form:"name" validate:"omitempty,min=2"`
-	Category    *string `form:"category" validate:"omitempty"`
-	Description *string `form:"description" validate:"omitempty,min=5"`
-	Price       *int64  `form:"price" validate:"omitempty,gt=0"`
-	Stock       *int    `form:"stock" validate:"omitempty,gte=0"`
-	InStock     *bool   `form:"in_stock"`
+	Title       *string                `form:"title" validate:"omitempty,min=2"`
+	Name        *string                `form:"name" validate:"omitempty,min=2"`
+	Category    *string                `form:"category" validate:"omitempty"`
+	Description *string                `form:"description" validate:"omitempty,min=5"`
+	Price       *int64                 `form:"price" validate:"omitempty,gt=0"`
+	Stock       *int                   `form:"stock" validate:"omitempty,gte=0"`
+	InStock     *bool                  `form:"in_stock"`
+	MainImage   *multipart.FileHeader `form:"main_image"`
 }
+

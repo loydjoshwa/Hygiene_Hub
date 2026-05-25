@@ -292,6 +292,26 @@ func (s *ProductService) UpdateProduct(
 		fieldsToUpdate["in_stock"] = *req.InStock
 	}
 
+	// Upload new image if provided
+	if req.MainImage != nil {
+		file, err := req.MainImage.Open()
+		if err != nil {
+			return nil, errors.New("failed to open image file")
+		}
+		defer file.Close()
+
+		uploadResult, err := cloudinary.UploadImageFile(
+			file,
+			req.MainImage.Filename,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		fieldsToUpdate["main_image"] = uploadResult.URL
+		fieldsToUpdate["main_image_public_id"] = uploadResult.PublicID
+	}
+
 	err = s.repo.UpdateByFields(
 		product,
 		id,

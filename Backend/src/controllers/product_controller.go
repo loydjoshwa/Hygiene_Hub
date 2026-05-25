@@ -180,6 +180,12 @@ func (p *ProductController) Update(c *fiber.Ctx) error {
 		return nil
 	}
 
+	// Try to get form file for main_image (optional in update)
+	file, err := c.FormFile("main_image")
+	if err == nil {
+		req.MainImage = file
+	}
+
 	product, err := p.productService.UpdateProduct(id, &req)
 
 	if err != nil {
