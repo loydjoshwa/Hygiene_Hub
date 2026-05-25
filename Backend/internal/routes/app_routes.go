@@ -86,6 +86,7 @@ func SetUpRoutes(
 		orders := user.Group("/orders")
 		{
 			orders.Get("/", orderController.GetUserOrders)
+			orders.Post("/cod", orderController.CreateCODOrder)
 		}
 
 		// Payment routes

@@ -49,7 +49,7 @@ func (s *AdminService) GetDashboardStats() (*dto.DashboardStatsResponse, error) 
 		return nil, errors.New("failed to count orders")
 	}
 
-	if err := db.Model(&models.Order{}).Select("COALESCE(SUM(total), 0)").Row().Scan(&totalRevenue); err != nil {
+	if err := db.Model(&models.Order{}).Where("status != ?", "cancelled").Select("COALESCE(SUM(total), 0)").Row().Scan(&totalRevenue); err != nil {
 		return nil, errors.New("failed to calculate revenue")
 	}
 

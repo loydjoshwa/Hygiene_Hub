@@ -219,3 +219,76 @@ func (oc *OrderController) VerifyRazorpayPayment(c *fiber.Ctx) error {
 	})
 }
 
+func (oc *OrderController) CreateCODOrder(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(constant.UNAUTHORIZED).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	var req struct {
+		OrderData models.Order `json:"client_order_details"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(constant.BADREQUEST).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	order := req.OrderData
+	order.ID = uuid.New()
+	order.UserID = userID
+	order.Status = "confirmed" // COD orders start as confirmed
+	order.PaymentMethod = "cod"
+
+	// Set payment details for COD
+	paymentDetailsMap := map[string]interface{}{
+		"status": "pending", // COD payments are pending until delivered
+	}
+	paymentDetailsJSON, err := json.Marshal(paymentDetailsMap)
+	if err == nil {
+		order.PaymentDetails = datatypes.JSON(paymentDetailsJSON)
+	}
+
+	for i := range order.Items {
+		order.Items[i].ID = uuid.New()
+	}
+
+	// Database transaction for stock adjustment and order insertion
+	err = oc.db.Transaction(func(tx *gorm.DB) error {
+		for _, item := range order.Items {
+			var product models.Product
+			if err := tx.Where("id = ?", item.ProductID).First(&product).Error; err != nil {
+				return err
+			}
+
+			if product.Stock < item.Quantity || !product.InStock {
+				return fiber.NewError(constant.BADREQUEST, "product out of stock: "+product.Name)
+			}
+
+			product.Stock -= item.Quantity
+			if product.Stock == 0 {
+				product.InStock = false
+			}
+
+			if err := tx.Save(&product).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Create(&order).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Log.Error("Create COD order failed:", err)
+		return c.Status(constant.INTERNALSERVERERROR).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message":  "COD order created successfully",
+		"order_id": order.ID,
+	})
+}
+

@@ -30,10 +30,11 @@ const MyOrders = () => {
         ) : (
           orders.map(order => (
             <div key={order.id} className="bg-white p-6 mb-4 rounded-lg shadow">
-              <div className="flex justify-between mb-4">
+              <div className="flex flex-wrap justify-between gap-4 mb-4 text-sm md:text-base">
                 <p><strong>Order ID:</strong> {order.orderId}</p>
                 <p><strong>Date:</strong> {new Date(order.orderDate).toLocaleString()}</p>
-                <p><strong>Status:</strong> {order.status}</p>
+                <p><strong>Status:</strong> <span className="capitalize">{order.status}</span></p>
+                <p><strong>Payment Method:</strong> <span className="uppercase">{order.paymentMethod || 'razorpay'}</span></p>
               </div>
 
               <div className="border-t pt-2">
@@ -60,7 +61,7 @@ const MyOrders = () => {
               </div>
 
               <div className="text-right mt-3 font-bold text-lg">
-                Total Paid: ₹{order.total}
+                Total Amount: ₹{order.total}
               </div>
             </div>
           ))

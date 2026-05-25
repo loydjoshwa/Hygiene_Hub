@@ -24,6 +24,7 @@ const Payment = () => {
   const { cartItems, getTotalPrice, clearCart } = useCart();
   const { currentUser, isSessionActive, validateUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("razorpay");
 
   const validationSchema = Yup.object({
     fullName: Yup.string().required("Full Name is required"),
@@ -60,6 +61,53 @@ const Payment = () => {
         return;
       }
 
+      // Cash on Delivery checkout path
+      if (selectedPaymentMethod === "cod") {
+        setLoading(true);
+        try {
+          const orderData = {
+            orderId: `ORD${Date.now().toString().slice(-6)}`,
+            userId: currentUser?.id || 'guest',
+            userName: values.fullName,
+            userEmail: currentUser?.email || 'guest@example.com',
+            userPhone: values.phone,
+            shippingAddress: {
+              address: values.address,
+              state: values.state,
+              pincode: values.pincode
+            },
+            paymentMethod: "cod",
+            items: cartItems.map(item => ({
+              productId: item.productId,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image
+            })),
+            subtotal: getTotalPrice(),
+            shipping: shippingCost,
+            total: finalTotal,
+            orderDate: new Date().toISOString(),
+            status: 'confirmed'
+          };
+
+          await axiosInstance.post("/user/orders/cod", {
+            client_order_details: orderData
+          });
+
+          await clearCart();
+          toast.success("Order Placed Successfully! (Cash on Delivery)");
+          setLoading(false);
+          navigate("/myorders");
+        } catch (error) {
+          console.error("COD order failed:", error);
+          toast.error("Failed to place Cash on Delivery order. Please try again.");
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Online payment checkout path via Razorpay
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         toast.error("Failed to load Razorpay SDK. Check your internet connection.");
@@ -291,10 +339,59 @@ const Payment = () => {
                   </div>
                 </div>
 
+                <h2 className="text-xl font-bold mb-4 mt-8 text-gray-800">Select Payment Method</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div
+                    onClick={() => setSelectedPaymentMethod("razorpay")}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 flex flex-col justify-between ${
+                      selectedPaymentMethod === "razorpay"
+                        ? "border-green-600 bg-green-50/50 shadow-md"
+                        : "border-gray-200 hover:border-green-400 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-gray-800">Online Payment</span>
+                      <input
+                        type="radio"
+                        name="paymentMethodSelect"
+                        checked={selectedPaymentMethod === "razorpay"}
+                        onChange={() => setSelectedPaymentMethod("razorpay")}
+                        className="text-green-600 focus:ring-green-500 h-4 w-4"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">Pay securely online using Cards, UPI, Netbanking via Razorpay.</p>
+                  </div>
+
+                  <div
+                    onClick={() => setSelectedPaymentMethod("cod")}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 flex flex-col justify-between ${
+                      selectedPaymentMethod === "cod"
+                        ? "border-green-600 bg-green-50/50 shadow-md"
+                        : "border-gray-200 hover:border-green-400 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-gray-800">Cash on Delivery (COD)</span>
+                      <input
+                        type="radio"
+                        name="paymentMethodSelect"
+                        checked={selectedPaymentMethod === "cod"}
+                        onChange={() => setSelectedPaymentMethod("cod")}
+                        className="text-green-600 focus:ring-green-500 h-4 w-4"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">Pay in cash when your order gets delivered to your doorstep.</p>
+                  </div>
+                </div>
+
                 <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row gap-4 items-center justify-between">
                   <div className="flex items-center gap-3 text-gray-600 bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-100">
-                    <span className="text-xl">🛡️</span>
-                    <span className="text-sm">Secure Payment processed via **Razorpay**</span>
+                    <span className="text-xl">{selectedPaymentMethod === "cod" ? "📦" : "🛡️"}</span>
+                    <span className="text-sm">
+                      {selectedPaymentMethod === "cod" 
+                        ? "Pay in cash upon delivery" 
+                        : "Secure Payment processed via Razorpay"}
+                    </span>
                   </div>
 
                   <div className="flex gap-4 w-full md:w-auto">
@@ -317,7 +414,9 @@ const Payment = () => {
                           Processing...
                         </>
                       ) : (
-                        `Pay Securely ₹${finalTotal}`
+                        selectedPaymentMethod === "cod" 
+                          ? `Place COD Order ₹${finalTotal}`
+                          : `Pay Securely ₹${finalTotal}`
                       )}
                     </button>
                   </div>
