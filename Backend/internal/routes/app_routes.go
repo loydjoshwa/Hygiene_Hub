@@ -28,7 +28,7 @@ func SetUpRoutes(
 
 	// ================= CORS =================
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*",
+		AllowOrigins:     "http://localhost:5173",
 		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowCredentials: false,
@@ -87,7 +87,13 @@ func SetUpRoutes(
 		{
 			orders.Get("/", orderController.GetUserOrders)
 			orders.Post("/cod", orderController.CreateCODOrder)
+			orders.Patch("/:id/cancel", orderController.CancelUserOrder)
+			orders.Post("/:orderId/return", orderController.ReturnOrderItem)
+			orders.Post("/wallet", orderController.CreateWalletOrder)
 		}
+
+		// Wallet route
+		user.Get("/wallet", orderController.GetUserWallet)
 
 		// Payment routes
 		payments := user.Group("/payments")

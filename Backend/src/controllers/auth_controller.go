@@ -179,10 +179,15 @@ func (a *AuthController) Dashboard(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "Welcome to Dashboard",
-		"user_id": userID,
-		"name":    user.Name,
-		"role":    role,
+		"message":    "Welcome to Dashboard",
+		"user_id":    userID,
+		"name":       user.Name,
+		"role":       role,
+		"is_blocked": user.IsBlocked,
+		"address":    user.Address,
+		"state":      user.State,
+		"pincode":    user.Pincode,
+		"phone":      user.Phone,
 	})
 }
 

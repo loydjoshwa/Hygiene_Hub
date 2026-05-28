@@ -102,6 +102,7 @@ func Migrate(db *gorm.DB) {
 		&models.Wishlist{},
 		&models.Order{},
 		&models.OrderItem{},
+		&models.Wallet{},
 	)
 
 	if err != nil {

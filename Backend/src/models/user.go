@@ -15,6 +15,10 @@ type User struct {
 	Role       string         `gorm:"not null" json:"role"`
 	IsBlocked  bool           `gorm:"default:false" json:"is_blocked"`
 	IsVerified bool           `gorm:"default:false" json:"is_verified"`
+	Address    string         `gorm:"type:text" json:"address"`
+	State      string         `gorm:"type:varchar(100)" json:"state"`
+	Pincode    string         `gorm:"type:varchar(10)" json:"pincode"`
+	Phone      string         `gorm:"type:varchar(20)" json:"phone"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`

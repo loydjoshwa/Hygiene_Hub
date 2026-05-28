@@ -9,6 +9,7 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('');
   const { addToCart, cartItems, getQuantity } = useCart();
   const { addToWishlist, currentUser, isInWishlist, isSessionActive } = useAuth();
   const navigate = useNavigate();
@@ -46,14 +47,25 @@ const Products = () => {
   }, []);
 
   const filteredProducts = React.useMemo(() => {
+    let result = [...products];
+
+    // 1. Filter by search term
     if (searchTerm) {
-      return products.filter(product =>
+      result = result.filter(product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    return products;
-  }, [searchTerm, products]);
+
+    // 2. Sort by price
+    if (sortBy === 'low-to-high') {
+      result.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'high-to-low') {
+      result.sort((a, b) => b.price - a.price);
+    }
+
+    return result;
+  }, [searchTerm, sortBy, products]);
 
   const handleAddToCart = async (product) => {
     if (!currentUser || !isSessionActive()) {
@@ -133,7 +145,7 @@ const Products = () => {
       
         <div className="mb-12">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-            <div className="w-full md:w-2/3">
+            <div className="w-full md:w-1/2">
               <div className="relative group">
                 <input
                   type="text"
@@ -142,13 +154,23 @@ const Products = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  
-                </div>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg">
-              {filteredProducts.length} of {products.length} Products
+
+            <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 font-semibold text-gray-700 shadow"
+              >
+                <option value="">Sort by Price</option>
+                <option value="low-to-high">Price: Low to High</option>
+                <option value="high-to-low">Price: High to Low</option>
+              </select>
+
+              <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg whitespace-nowrap">
+                {filteredProducts.length} of {products.length} Products
+              </div>
             </div>
           </div>
 
