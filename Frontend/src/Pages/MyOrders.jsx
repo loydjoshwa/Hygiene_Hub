@@ -10,11 +10,7 @@ const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [wallet, setWallet] = useState({ balance: 0 });
 
-  // Return product modal state
-  const [showModal, setShowModal] = useState(false);
-  const [activeReturnInfo, setActiveReturnInfo] = useState({ orderId: "", itemId: "", productName: "" });
-  const [returnReason, setReturnReason] = useState("Defective/broken product");
-  const [returnDetails, setReturnDetails] = useState("");
+
 
   const fetchData = async () => {
     if (currentUser) {
@@ -48,34 +44,7 @@ const MyOrders = () => {
     }
   };
 
-  const openReturnModal = (orderId, itemId, productName) => {
-    setActiveReturnInfo({ orderId, itemId, productName });
-    setReturnReason("Defective/broken product");
-    setReturnDetails("");
-    setShowModal(true);
-  };
 
-  const handleReturnSubmit = async () => {
-    if (!returnDetails.trim()) {
-      toast.warn("Please provide description details about the defect/return");
-      return;
-    }
-
-    try {
-      const fullReason = `${returnReason}: ${returnDetails}`;
-      await axiosInstance.post(`/user/orders/${activeReturnInfo.orderId}/return`, {
-        orderItemId: activeReturnInfo.itemId,
-        reason: fullReason
-      });
-
-      toast.success("Return processed successfully. Refund credited to wallet!");
-      setShowModal(false);
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.error || "Failed to process return");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -86,7 +55,7 @@ const MyOrders = () => {
         {/* Modern Wallet Card Widget */}
         <div className="bg-gradient-to-r from-indigo-700 via-blue-600 to-cyan-500 rounded-3xl p-6 text-white shadow-xl mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all duration-300 hover:shadow-2xl">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-blue-100">Digital Refund Wallet Balance</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-blue-100">Wallet Balance</h2>
             <p className="text-4xl font-black mt-2 tracking-tight">₹{wallet.balance.toLocaleString()}</p>
           </div>
           <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20">
@@ -150,29 +119,7 @@ const MyOrders = () => {
                           <p className="text-[10px] text-gray-400 font-medium">₹{item.price} each</p>
                         </div>
                         
-                        {order.status === 'delivered' && (
-                          <div className="mt-2">
-                            {item.isReturned ? (
-                              <div className="text-left sm:text-right">
-                                <span className="inline-block px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg border border-amber-200 uppercase tracking-wider">
-                                  Returned
-                                </span>
-                                {item.returnReason && (
-                                  <p className="text-[10px] text-slate-500 italic mt-1 max-w-[150px] truncate" title={item.returnReason}>
-                                    "{item.returnReason}"
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => openReturnModal(order.id, item.id, item.name)}
-                                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-[11px] font-bold rounded-xl shadow-sm hover:shadow transition-all duration-150 cursor-pointer"
-                              >
-                                Return Product
-                              </button>
-                            )}
-                          </div>
-                        )}
+
                       </div>
                     </div>
                   ))}
@@ -199,64 +146,7 @@ const MyOrders = () => {
         )}
       </div>
 
-      {/* Modern Defective Returns Modal Overlay Dialog */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 transition-all transform scale-100">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-6 text-white">
-              <h3 className="text-xl font-bold">Return Request</h3>
-              <p className="text-xs text-amber-100 mt-1">Initiating return for defective/damaged item</p>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Product Name</span>
-                <p className="font-bold text-gray-800 text-sm mt-0.5">{activeReturnInfo.productName}</p>
-              </div>
 
-              <div>
-                <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block mb-1">Select Defect / Return Reason</label>
-                <select
-                  value={returnReason}
-                  onChange={(e) => setReturnReason(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-                >
-                  <option value="Defective/broken product">Defective / broken product</option>
-                  <option value="Wrong product received">Wrong product received</option>
-                  <option value="Product not matching description">Product not matching description</option>
-                  <option value="Quality not as expected">Quality not as expected</option>
-                  <option value="Other issues">Other issues</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block mb-1">Explain details of defects</label>
-                <textarea
-                  placeholder="Explain exactly what is wrong with the product..."
-                  value={returnDetails}
-                  onChange={(e) => setReturnDetails(e.target.value)}
-                  className="w-full h-24 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 placeholder-gray-400 resize-none font-medium"
-                />
-              </div>
-            </div>
-
-            <div className="p-6 bg-slate-50 flex gap-3 border-t border-slate-100">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl text-sm font-bold transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReturnSubmit}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
-              >
-                Submit Return
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Footer />
     </div>

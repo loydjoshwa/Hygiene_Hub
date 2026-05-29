@@ -16,7 +16,7 @@ import Payment from './Pages/Payment';
 import ProtectedRoute from './Routes/ProtectedRoute';
 import PublicRoute from './Routes/PublicRoute';
 import Navbar from './components/Navbar';
-import MyOrders from './Pages/Myorders';
+import MyOrders from './Pages/MyOrders';
 
 
 import AdminDashboard from "./Admin/AdminDashboard";

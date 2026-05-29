@@ -58,7 +58,7 @@ const Payment = () => {
     }
   }, [currentUser]);
 
-  const shippingCost = cartItems.length > 0 ? 40 : 0;
+  const shippingCost = getTotalPrice() > 1000 ? 0 : (cartItems.length > 0 ? 40 : 0);
   const finalTotal = getTotalPrice() + shippingCost;
 
   // Calculate dynamic coin deductible
@@ -145,12 +145,12 @@ const Payment = () => {
           });
 
           await clearCart();
-          toast.success("Order Placed Successfully! Paid fully with Wallet coins.");
+          toast.success("Order Placed Successfully! Paid fully with Wallet.");
           setLoading(false);
           navigate("/myorders");
         } catch (error) {
           console.error("Wallet order failed:", error);
-          toast.error(error.response?.data?.error || "Failed to place order using Wallet coins.");
+          toast.error(error.response?.data?.error || "Failed to place order using Wallet.");
           setLoading(false);
         }
         return;
@@ -307,11 +307,11 @@ const Payment = () => {
       <div className="pt-24 pb-16 max-w-6xl mx-auto px-4 flex-grow w-full">
         <h1 className="text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Complete Your Order</h1>
 
-        {/* Live Wallet balance banner if they have coins */}
+        {/* Live Wallet balance banner */}
         {wallet.balance > 0 && (
           <div className="bg-gradient-to-r from-indigo-700 via-blue-600 to-cyan-500 rounded-2xl p-5 text-white shadow-md mb-8 flex items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">Spendable Wallet Coins</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">Wallet Balance</p>
               <p className="text-2xl font-black mt-0.5">₹{wallet.balance.toLocaleString()}</p>
             </div>
             <div className="bg-white/10 px-4 py-2.5 rounded-xl border border-white/20 text-xs font-semibold text-white backdrop-blur-md">
@@ -348,11 +348,11 @@ const Payment = () => {
                   <span>₹{shippingCost}</span>
                 </div>
 
-                {/* Coin deduction line */}
+                {/* Wallet deduction line */}
                 {appliedCoins > 0 && (
                   <div className="flex justify-between text-indigo-600 font-semibold bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50 my-3">
                     <span className="flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                      🪙 Wallet Coins Deductible
+                      🪙 Wallet Deductible
                     </span>
                     <span className="font-bold">- ₹{appliedCoins}</span>
                   </div>
@@ -463,12 +463,12 @@ const Payment = () => {
                 </div>
 
                 {isFullyWalletPaid ? (
-                  // Fully paid with coins state
+                  // Fully paid with wallet state
                   <div className="mt-8 bg-indigo-50 border border-indigo-200 p-5 rounded-2xl">
                     <h3 className="text-lg font-bold text-indigo-900 mb-2 flex items-center gap-1.5">
-                      <span>🎉</span> Fully Covered by Wallet Coins
+                      <span>🎉</span> Fully Covered by Wallet
                     </h3>
-                    <p className="text-sm text-indigo-700 font-medium">Your total order balance of <strong>₹{finalTotal}</strong> will be paid entirely using your spendable wallet coins. No separate online payment or COD is required!</p>
+                    <p className="text-sm text-indigo-700 font-medium">Your total order balance of <strong>₹{finalTotal}</strong> will be paid entirely using your wallet balance. No separate online payment or COD is required!</p>
                   </div>
                 ) : (
                   // Normal or partial payment select state
@@ -525,7 +525,7 @@ const Payment = () => {
                     <span className="text-xl">{isFullyWalletPaid ? "🪙" : selectedPaymentMethod === "cod" ? "📦" : "🛡️"}</span>
                     <span className="text-sm font-semibold text-slate-600">
                       {isFullyWalletPaid
-                        ? "Paid entirely using wallet coins"
+                        ? "Paid entirely using Wallet"
                         : selectedPaymentMethod === "cod" 
                         ? "Pay remaining amount in cash upon delivery" 
                         : "Remaining balance processed via Razorpay"}
@@ -557,7 +557,7 @@ const Payment = () => {
                         </>
                       ) : (
                         isFullyWalletPaid
-                          ? `Pay with Coins ₹${finalTotal}`
+                          ? `Pay with Wallet ₹${finalTotal}`
                           : selectedPaymentMethod === "cod" 
                           ? `Place COD Order ₹${amountToPay}`
                           : `Pay Securely ₹${amountToPay}`

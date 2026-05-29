@@ -23,10 +23,10 @@ func LoadConfig() *models.Config {
 	// Create config object
 	cfg := &models.Config{}
 
-	// ================= SERVER =================
+	// SERVER 
 	cfg.Server.Port = getEnv("SERVER_PORT", "8080")
 
-	// ================= DATABASE =================
+	//  DATABASE 
 	cfg.DB.Host = getEnv("DB_HOST", "127.0.0.1")
 	cfg.DB.Port = getEnvAsInt("DB_PORT", 5432)
 	cfg.DB.User = getEnv("DB_USER", "postgres")
@@ -35,7 +35,7 @@ func LoadConfig() *models.Config {
 	cfg.DB.SSLMode = getEnv("DB_SSLMODE", "disable")
 	cfg.DB.TimeZone = getEnv("DB_TIMEZONE", "Asia/Kolkata")
 
-	// ================= JWT =================
+	//  JWT 
 	cfg.JWT.AccessSecret = getEnv("ACCESS_SECRET", "")
 	cfg.JWT.RefreshSecret = getEnv("REFRESH_SECRET", "")
 
@@ -43,7 +43,7 @@ func LoadConfig() *models.Config {
 	cfg.JWT.RefreshTTLHours = getEnvAsInt("REFRESH_TTL_HOUR", 168)
 	cfg.JWT.MaxSessionHours = getEnvAsInt("MAX_SESSION", 720)
 
-	// ================= EMAIL =================
+	//  EMAIL 
 	cfg.SMTP.Host = getEnv("SMTP_HOST", "smtp.gmail.com")
 	cfg.SMTP.Port = getEnvAsInt("SMTP_PORT", 587)
 	cfg.SMTP.Username = getEnv("SMTP_USERNAME", "")
@@ -54,15 +54,15 @@ func LoadConfig() *models.Config {
 		"hygienehub <loydjoshwad@gmail.com>",
 	)
 
-	// ================= OTP =================
+	//  OTP 
 	cfg.OTP.Length = getEnvAsInt("OTP_LENGTH", 5)
 	cfg.OTP.ExpiryMinutes = getEnvAsInt("OTP_EXPIRY_MINUTES", 5)
 
-	// ================= REDIS =================
+	//  REDIS 
 	cfg.Redis.Host = getEnv("REDIS_HOST", "127.0.0.1")
 	cfg.Redis.Port = getEnv("REDIS_PORT", "6379")
 
-	// ================= RAZORPAY =================
+	//  RAZORPAY 
 	cfg.Razorpay.KeyID = getEnv("RAZORPAY_KEY_ID", "")
 	cfg.Razorpay.KeySecret = getEnv("RAZORPAY_KEY_SECRET", "")
 

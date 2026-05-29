@@ -127,7 +127,7 @@ func (oc *OrderController) UpdateOrderStatus(c *fiber.Ctx) error {
 			}
 		}
 
-		// Refund coins if transitioning to cancelled
+		// Refund to wallet if transitioning to cancelled
 		if newStatus == "cancelled" {
 			refundAmount := int64(0)
 			isPaid := false
@@ -279,7 +279,7 @@ func (oc *OrderController) VerifyRazorpayPayment(c *fiber.Ctx) error {
 
 	// Execute inside a database transaction to verify stock and save the order
 	err = oc.db.Transaction(func(tx *gorm.DB) error {
-		// Deduct from wallet if coins were applied
+		// Deduct from wallet if wallet balance was applied
 		if order.WalletAmountUsed > 0 {
 			var wallet models.Wallet
 			if err := tx.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
@@ -378,7 +378,7 @@ func (oc *OrderController) CreateCODOrder(c *fiber.Ctx) error {
 
 	// Database transaction for stock verification and order insertion
 	err = oc.db.Transaction(func(tx *gorm.DB) error {
-		// Deduct from wallet if coins were applied
+		// Deduct from wallet if wallet balance was applied
 		if order.WalletAmountUsed > 0 {
 			var wallet models.Wallet
 			if err := tx.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
@@ -478,7 +478,7 @@ func (oc *OrderController) CancelUserOrder(c *fiber.Ctx) error {
 			}
 		}
 
-		// Refund coins on cancellation
+		// Refund to wallet on cancellation
 		refundAmount := int64(0)
 		isPaid := false
 		if order.PaymentMethod == "cod" {

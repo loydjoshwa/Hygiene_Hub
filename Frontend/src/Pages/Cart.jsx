@@ -58,7 +58,7 @@ const Cart = () => {
     Navigate("/payment");
   };
 
-  const shippingCost = getTotalItems() > 0 ? 40 : 0;
+  const shippingCost = getTotalPrice() > 1000 ? 0 : (getTotalItems() > 0 ? 40 : 0);
   const finalTotal = getTotalPrice() + shippingCost;
 
   return (
