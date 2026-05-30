@@ -14,7 +14,7 @@ type AdminController struct {
 }
 
 func NewAdminController(service *services.AdminService) *AdminController {
-	return &AdminController{adminService: service}
+	return &AdminController{adminService: service} 
 }
 
 // GetDashboardStats returns stats for the admin dashboard
