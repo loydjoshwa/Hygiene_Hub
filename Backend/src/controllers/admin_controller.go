@@ -73,5 +73,5 @@ func (a *AdminController) UpdateUserBlockStatus(c *fiber.Ctx) error {
 
 	return c.Status(constant.SUCCESS).JSON(fiber.Map{
 		"message": "User successfully " + status,
-	})
+	}) 
 }
