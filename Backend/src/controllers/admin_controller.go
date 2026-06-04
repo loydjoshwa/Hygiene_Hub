@@ -67,7 +67,7 @@ func (a *AdminController) UpdateUserBlockStatus(c *fiber.Ctx) error {
 	}
 
 	status := "unblocked"  
-	if *req.IsBlocked {
+	if *req.IsBlocked { 
 		status = "blocked"
 	}
 
