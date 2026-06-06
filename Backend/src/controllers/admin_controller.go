@@ -64,7 +64,7 @@ func (a *AdminController) UpdateUserBlockStatus(c *fiber.Ctx) error {
 		logger.Log.Error("Update User Block Status failed:", err)
 		return c.Status(constant.BADREQUEST).
 			JSON(fiber.Map{"error": err.Error()})
-	}
+	}  
  
 	status := "unblocked"  
 	if *req.IsBlocked { 
